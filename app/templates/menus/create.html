@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau Menu{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('menus.index') }}">Menus</a></li>
+                <li class="breadcrumb-item active">Nouveau menu</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-10 offset-lg-1">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title mb-4">
+                    <i class="bi bi-plus-circle"></i> Nouveau Menu
+                </h1>
+
+                <form method="POST" action="{{ url_for('menus.create') }}">
+                    <!-- Informations générales -->
+                    <h4 class="mb-3">Informations générales</h4>
+
+                    <div class="mb-3">
+                        <label for="nom" class="form-label">Nom du menu *</label>
+                        <input type="text" class="form-control" id="nom" name="nom" placeholder="Ex: Menu de la semaine" required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="date_debut" class="form-label">Date de début *</label>
+                            <input type="date" class="form-control" id="date_debut" name="date_debut" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="nb_personnes" class="form-label">Nombre de personnes *</label>
+                            <input type="number" class="form-control" id="nb_personnes" name="nb_personnes" value="2" min="1" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="theme" class="form-label">Thème</label>
+                        <input type="text" class="form-control" id="theme" name="theme" placeholder="Ex: Cuisine italienne, Été léger...">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" placeholder="Notes sur ce menu..."></textarea>
+                    </div>
+
+                    <hr>
+
+                    <!-- Planning de la semaine -->
+                    <h4 class="mb-3">Planning de la semaine</h4>
+                    <p class="text-muted">Sélectionnez les recettes pour chaque repas. Les quantités seront automatiquement ajustées selon le nombre de personnes.</p>
+
+                    {% set jours_noms = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] %}
+                    {% for i in range(7) %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">{{ jours_noms[i] }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <label for="jour_{{ i }}_petit_dejeuner" class="form-label">
+                                        <i class="bi bi-sunrise"></i> Petit-déjeuner
+                                    </label>
+                                    <select class="form-select" id="jour_{{ i }}_petit_dejeuner" name="jour_{{ i }}_petit_dejeuner">
+                                        <option value="">-- Aucun --</option>
+                                        {% for recette in recettes %}
+                                        <option value="{{ recette.id }}">{{ recette.nom }} ({{ recette.portions }} portions)</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label for="jour_{{ i }}_dejeuner" class="form-label">
+                                        <i class="bi bi-sun"></i> Déjeuner
+                                    </label>
+                                    <select class="form-select" id="jour_{{ i }}_dejeuner" name="jour_{{ i }}_dejeuner">
+                                        <option value="">-- Aucun --</option>
+                                        {% for recette in recettes %}
+                                        <option value="{{ recette.id }}">{{ recette.nom }} ({{ recette.portions }} portions)</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label for="jour_{{ i }}_diner" class="form-label">
+                                        <i class="bi bi-moon-stars"></i> Dîner
+                                    </label>
+                                    <select class="form-select" id="jour_{{ i }}_diner" name="jour_{{ i }}_diner">
+                                        <option value="">-- Aucun --</option>
+                                        {% for recette in recettes %}
+                                        <option value="{{ recette.id }}">{{ recette.nom }} ({{ recette.portions }} portions)</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <hr>
+
+                    <!-- Boutons -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('menus.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Créer le menu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

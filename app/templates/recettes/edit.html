@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ recette.nom }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('recettes.index') }}">Recettes</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('recettes.detail', id=recette.id) }}">{{ recette.nom }}</a></li>
+                <li class="breadcrumb-item active">Modifier</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title mb-4">
+                    <i class="bi bi-pencil"></i> Modifier la recette
+                </h1>
+
+                <form method="POST" action="{{ url_for('recettes.edit', id=recette.id) }}" enctype="multipart/form-data">
+                    <!-- Informations générales -->
+                    <h4 class="mb-3">Informations générales</h4>
+
+                    <div class="mb-3">
+                        <label for="nom" class="form-label">Nom de la recette *</label>
+                        <input type="text" class="form-control" id="nom" name="nom" value="{{ recette.nom }}" required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="portions" class="form-label">Portions *</label>
+                            <input type="number" class="form-control" id="portions" name="portions" value="{{ recette.portions }}" min="1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="temps_preparation" class="form-label">Temps préparation</label>
+                            <input type="text" class="form-control" id="temps_preparation" name="temps_preparation" value="{{ recette.temps_preparation or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="temps_cuisson" class="form-label">Temps cuisson</label>
+                            <input type="text" class="form-control" id="temps_cuisson" name="temps_cuisson" value="{{ recette.temps_cuisson or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="auteur_nom" class="form-label">Auteur</label>
+                            <input type="text" class="form-control" id="auteur_nom" name="auteur_nom" value="{{ recette.auteur_nom or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="evaluation" class="form-label">Évaluation</label>
+                            <select class="form-select" id="evaluation" name="evaluation">
+                                <option value="0" {% if recette.evaluation == 0 %}selected{% endif %}>Pas encore noté</option>
+                                <option value="1" {% if recette.evaluation == 1 %}selected{% endif %}>⭐ (1/5)</option>
+                                <option value="2" {% if recette.evaluation == 2 %}selected{% endif %}>⭐⭐ (2/5)</option>
+                                <option value="3" {% if recette.evaluation == 3 %}selected{% endif %}>⭐⭐⭐ (3/5)</option>
+                                <option value="4" {% if recette.evaluation == 4 %}selected{% endif %}>⭐⭐⭐⭐ (4/5)</option>
+                                <option value="5" {% if recette.evaluation == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ (5/5)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {% if recette.photo_url %}
+                    <div class="mb-3">
+                        <label class="form-label">Photo actuelle</label>
+                        <div>
+                            <img src="{{ recette.photo_url }}" alt="{{ recette.nom }}" class="img-thumbnail" style="max-height: 200px;">
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">Nouvelle photo</label>
+                        <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="note" class="form-label">Notes personnelles</label>
+                        <textarea class="form-control" id="note" name="note" rows="3">{{ recette.note or '' }}</textarea>
+                    </div>
+
+                    <hr>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> <strong>Note :</strong> La modification des ingrédients et instructions sera disponible prochainement. Pour le moment, seules les informations générales peuvent être modifiées.
+                    </div>
+
+                    <hr>
+
+                    <!-- Boutons -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Enregistrer les modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

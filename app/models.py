@@ -142,7 +142,7 @@ class Menu(db.Model):
 
     # Relations
     jours = db.relationship('MenuJour', backref='menu', lazy='dynamic', cascade='all, delete-orphan', order_by='MenuJour.jour_semaine')
-    liste_courses = db.relationship('ListeCourse', backref='menu', lazy='dynamic', cascade='all, delete-orphan')
+    listes_courses = db.relationship('ListeCourse', backref='menu', lazy='dynamic', cascade='all, delete-orphan')
 
     def generer_liste_courses(self):
         """
@@ -170,21 +170,28 @@ class Menu(db.Model):
                                 'unite': unite
                             }
 
-        # Supprimer les anciennes listes de courses
-        ListeCourse.query.filter_by(menu_id=self.id).delete()
+        # Créer une nouvelle liste de courses
+        from datetime import datetime
+        liste = ListeCourse(
+            nom=f"Liste de courses - {self.nom}",
+            menu_id=self.id,
+            created_by=self.created_by
+        )
+        db.session.add(liste)
+        db.session.flush()  # Pour obtenir l'ID
 
-        # Créer les nouvelles entrées
+        # Créer les items
         for data in ingredients_totaux.values():
-            liste_course = ListeCourse(
-                menu_id=self.id,
-                ingredient_id=data['ingredient'].id,
+            item = ListeCourseItem(
+                liste_id=liste.id,
+                nom_ingredient=data['ingredient'].nom,
                 quantite=data['quantite'],
                 unite=data['unite'],
                 achete=False
             )
-            db.session.add(liste_course)
+            db.session.add(item)
 
-        db.session.commit()
+        return liste
 
     def __repr__(self):
         return f'<Menu {self.nom}>'
@@ -219,22 +226,36 @@ class MenuJour(db.Model):
 
 
 class ListeCourse(db.Model):
-    """Modèle liste de courses"""
+    """Modèle liste de courses (conteneur)"""
     __tablename__ = 'liste_courses'
 
     id = db.Column(db.Integer, primary_key=True)
-    menu_id = db.Column(db.Integer, db.ForeignKey('menus.id'), nullable=False)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
-    quantite = db.Column(db.Float, nullable=False)
-    unite = db.Column(db.String(20))
-    achete = db.Column(db.Boolean, default=False)
+    nom = db.Column(db.String(200), nullable=False)
+    menu_id = db.Column(db.Integer, db.ForeignKey('menus.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    # Relation
-    ingredient = db.relationship('Ingredient')
+    # Relations
+    ingredients = db.relationship('ListeCourseItem', backref='liste', lazy='dynamic', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f'<ListeCourse {self.quantite} {self.unite}>'
+        return f'<ListeCourse {self.nom}>'
+
+
+class ListeCourseItem(db.Model):
+    """Modèle item de liste de courses"""
+    __tablename__ = 'liste_course_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    liste_id = db.Column(db.Integer, db.ForeignKey('liste_courses.id'), nullable=False)
+    nom_ingredient = db.Column(db.String(100), nullable=False)
+    quantite = db.Column(db.Float, nullable=False)
+    unite = db.Column(db.String(20))
+    rayon = db.Column(db.String(50))  # Pour organiser la liste par rayon
+    achete = db.Column(db.Boolean, default=False)
+
+    def __repr__(self):
+        return f'<ListeCourseItem {self.quantite} {self.unite} {self.nom_ingredient}>'
 
 
 class Stock(db.Model):

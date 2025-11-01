@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle Recette{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('recettes.index') }}">Recettes</a></li>
+                <li class="breadcrumb-item active">Nouvelle recette</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title mb-4">
+                    <i class="bi bi-plus-circle"></i> Nouvelle Recette
+                </h1>
+
+                <form method="POST" action="{{ url_for('recettes.create') }}" enctype="multipart/form-data">
+                    <!-- Informations générales -->
+                    <h4 class="mb-3">Informations générales</h4>
+
+                    <div class="mb-3">
+                        <label for="nom" class="form-label">Nom de la recette *</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="portions" class="form-label">Portions *</label>
+                            <input type="number" class="form-control" id="portions" name="portions" value="4" min="1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="temps_preparation" class="form-label">Temps préparation</label>
+                            <input type="text" class="form-control" id="temps_preparation" name="temps_preparation" placeholder="Ex: 15 min">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="temps_cuisson" class="form-label">Temps cuisson</label>
+                            <input type="text" class="form-control" id="temps_cuisson" name="temps_cuisson" placeholder="Ex: 30 min">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="auteur_nom" class="form-label">Auteur</label>
+                            <input type="text" class="form-control" id="auteur_nom" name="auteur_nom" placeholder="Ex: Grand-mère">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="evaluation" class="form-label">Évaluation</label>
+                            <select class="form-select" id="evaluation" name="evaluation">
+                                <option value="0">Pas encore noté</option>
+                                <option value="1">⭐ (1/5)</option>
+                                <option value="2">⭐⭐ (2/5)</option>
+                                <option value="3">⭐⭐⭐ (3/5)</option>
+                                <option value="4">⭐⭐⭐⭐ (4/5)</option>
+                                <option value="5">⭐⭐⭐⭐⭐ (5/5)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="photo" class="form-label">Photo</label>
+                        <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="note" class="form-label">Notes personnelles</label>
+                        <textarea class="form-control" id="note" name="note" rows="3" placeholder="Vos notes sur cette recette..."></textarea>
+                    </div>
+
+                    <hr>
+
+                    <!-- Ingrédients -->
+                    <h4 class="mb-3">Ingrédients</h4>
+                    <div id="ingredients-container">
+                        <div class="row mb-2 ingredient-row">
+                            <div class="col-md-3">
+                                <input type="number" class="form-control" name="ingredient_quantite[]" placeholder="Quantité" step="0.1">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
+                            </div>
+                            <div class="col-md-5">
+                                <input type="text" class="form-control" name="ingredient_nom[]" placeholder="Nom de l'ingrédient">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-danger btn-sm remove-ingredient" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add-ingredient">
+                        <i class="bi bi-plus-circle"></i> Ajouter un ingrédient
+                    </button>
+
+                    <hr>
+
+                    <!-- Instructions -->
+                    <h4 class="mb-3">Instructions</h4>
+                    <div id="instructions-container">
+                        <div class="mb-2 instruction-row">
+                            <div class="input-group">
+                                <span class="input-group-text">1.</span>
+                                <textarea class="form-control" name="instruction[]" rows="2" placeholder="Étape de préparation"></textarea>
+                                <button type="button" class="btn btn-danger remove-instruction" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add-instruction">
+                        <i class="bi bi-plus-circle"></i> Ajouter une étape
+                    </button>
+
+                    <hr>
+
+                    <!-- Boutons -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('recettes.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Créer la recette
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Gestion des ingrédients
+let ingredientCount = 1;
+document.getElementById('add-ingredient').addEventListener('click', function() {
+    ingredientCount++;
+    const container = document.getElementById('ingredients-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-2 ingredient-row';
+    newRow.innerHTML = `
+        <div class="col-md-3">
+            <input type="number" class="form-control" name="ingredient_quantite[]" placeholder="Quantité" step="0.1">
+        </div>
+        <div class="col-md-3">
+            <input type="text" class="form-control" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
+        </div>
+        <div class="col-md-5">
+            <input type="text" class="form-control" name="ingredient_nom[]" placeholder="Nom de l'ingrédient">
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-danger btn-sm remove-ingredient">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    updateRemoveButtons();
+});
+
+// Gestion des instructions
+let instructionCount = 1;
+document.getElementById('add-instruction').addEventListener('click', function() {
+    instructionCount++;
+    const container = document.getElementById('instructions-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'mb-2 instruction-row';
+    newRow.innerHTML = `
+        <div class="input-group">
+            <span class="input-group-text">${instructionCount}.</span>
+            <textarea class="form-control" name="instruction[]" rows="2" placeholder="Étape de préparation"></textarea>
+            <button type="button" class="btn btn-danger remove-instruction">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    updateRemoveButtons();
+});
+
+// Gérer la suppression des lignes
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-ingredient')) {
+        e.target.closest('.ingredient-row').remove();
+        updateRemoveButtons();
+    }
+    if (e.target.closest('.remove-instruction')) {
+        e.target.closest('.instruction-row').remove();
+        updateInstructionNumbers();
+        updateRemoveButtons();
+    }
+});
+
+function updateRemoveButtons() {
+    const ingredientRows = document.querySelectorAll('.ingredient-row');
+    const instructionRows = document.querySelectorAll('.instruction-row');
+
+    ingredientRows.forEach((row, index) => {
+        const btn = row.querySelector('.remove-ingredient');
+        btn.disabled = ingredientRows.length === 1;
+    });
+
+    instructionRows.forEach((row, index) => {
+        const btn = row.querySelector('.remove-instruction');
+        btn.disabled = instructionRows.length === 1;
+    });
+}
+
+function updateInstructionNumbers() {
+    const instructionRows = document.querySelectorAll('.instruction-row');
+    instructionRows.forEach((row, index) => {
+        row.querySelector('.input-group-text').textContent = (index + 1) + '.';
+    });
+    instructionCount = instructionRows.length;
+}
+</script>
+{% endblock %}

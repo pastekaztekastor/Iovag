@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}{{ liste.nom }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('courses.index') }}">Listes de courses</a></li>
+                <li class="breadcrumb-item active">{{ liste.nom }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <i class="bi bi-cart"></i> {{ liste.nom }}
+                </h1>
+
+                {% if liste.menu %}
+                <p class="text-muted">
+                    <i class="bi bi-calendar-week"></i> Généré depuis le menu :
+                    <a href="{{ url_for('menus.detail', id=liste.menu.id) }}">{{ liste.menu.nom }}</a>
+                </p>
+                {% endif %}
+
+                {% set nb_ingredients = liste.ingredients|length %}
+                {% set nb_achetes = liste.ingredients|selectattr('achete', 'equalto', true)|list|length %}
+
+                <div class="alert {% if nb_achetes == nb_ingredients %}alert-success{% else %}alert-info{% endif %}">
+                    <strong>Progression :</strong> {{ nb_achetes }}/{{ nb_ingredients }} article(s) acheté(s)
+                    <div class="progress mt-2" style="height: 25px;">
+                        <div class="progress-bar {% if nb_achetes == nb_ingredients %}bg-success{% endif %}"
+                             role="progressbar"
+                             style="width: {{ (nb_achetes / nb_ingredients * 100)|round if nb_ingredients > 0 else 0 }}%">
+                            {{ (nb_achetes / nb_ingredients * 100)|round if nb_ingredients > 0 else 0 }}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des ingrédients -->
+                <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Articles à acheter</h2>
+
+                {% if liste.ingredients %}
+                <form id="updateForm">
+                    <ul class="list-group">
+                        {% for item in liste.ingredients %}
+                        <li class="list-group-item">
+                            <div class="form-check">
+                                <input class="form-check-input ingredient-checkbox"
+                                       type="checkbox"
+                                       value="{{ item.id }}"
+                                       id="ingredient_{{ item.id }}"
+                                       {% if item.achete %}checked{% endif %}
+                                       onchange="toggleIngredient({{ item.id }}, this.checked)">
+                                <label class="form-check-label w-100 {% if item.achete %}text-decoration-line-through text-muted{% endif %}"
+                                       for="ingredient_{{ item.id }}"
+                                       id="label_{{ item.id }}">
+                                    <strong>{{ item.quantite }} {{ item.unite }}</strong> {{ item.nom_ingredient }}
+                                    {% if item.rayon %}
+                                    <span class="badge bg-secondary">{{ item.rayon }}</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </form>
+                {% else %}
+                <p class="text-muted">Aucun ingrédient dans cette liste</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Actions</h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('courses.export_pdf', id=liste.id) }}" class="btn btn-success">
+                        <i class="bi bi-file-pdf"></i> Exporter en PDF
+                    </a>
+                    {% if liste.menu %}
+                    <a href="{{ url_for('menus.detail', id=liste.menu.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-calendar-week"></i> Voir le menu
+                    </a>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('courses.delete', id=liste.id) }}" onsubmit="return confirmDelete('Êtes-vous sûr de vouloir supprimer cette liste ?');">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+                    <hr>
+                    <a href="{{ url_for('courses.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour aux listes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> Informations</h5>
+                <p class="card-text">
+                    <small class="text-muted">
+                        Créée le {{ liste.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleIngredient(itemId, checked) {
+    // Update UI immediately
+    const label = document.getElementById('label_' + itemId);
+    if (checked) {
+        label.classList.add('text-decoration-line-through', 'text-muted');
+    } else {
+        label.classList.remove('text-decoration-line-through', 'text-muted');
+    }
+
+    // Send update to server
+    fetch('{{ url_for("courses.toggle_ingredient", id=liste.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            item_id: itemId,
+            achete: checked
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update progress bar
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Revert UI on error
+        document.getElementById('ingredient_' + itemId).checked = !checked;
+        if (!checked) {
+            label.classList.add('text-decoration-line-through', 'text-muted');
+        } else {
+            label.classList.remove('text-decoration-line-through', 'text-muted');
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recette.nom }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('recettes.index') }}">Recettes</a></li>
+                <li class="breadcrumb-item active">{{ recette.nom }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            {% if recette.photo_url %}
+            <img src="{{ recette.photo_url }}" class="card-img-top" alt="{{ recette.nom }}" style="max-height: 400px; object-fit: cover;">
+            {% endif %}
+
+            <div class="card-body">
+                <h1 class="card-title">{{ recette.nom }}</h1>
+
+                <div class="star-rating mb-3">
+                    {% for i in range(5) %}
+                        {% if i < recette.evaluation %}
+                            <i class="bi bi-star-fill"></i>
+                        {% else %}
+                            <i class="bi bi-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-people fs-4 text-primary me-2"></i>
+                            <div>
+                                <small class="text-muted d-block">Portions</small>
+                                <strong>{{ recette.portions }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% if recette.temps_preparation %}
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-clock fs-4 text-primary me-2"></i>
+                            <div>
+                                <small class="text-muted d-block">Préparation</small>
+                                <strong>{{ recette.temps_preparation }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if recette.temps_cuisson %}
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-fire fs-4 text-primary me-2"></i>
+                            <div>
+                                <small class="text-muted d-block">Cuisson</small>
+                                <strong>{{ recette.temps_cuisson }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if recette.auteur_nom %}
+                <p class="text-muted"><i class="bi bi-person"></i> Par {{ recette.auteur_nom }}</p>
+                {% endif %}
+
+                {% if recette.note %}
+                <div class="alert alert-info">
+                    <i class="bi bi-sticky"></i> <strong>Note :</strong> {{ recette.note }}
+                </div>
+                {% endif %}
+
+                <!-- Ingrédients -->
+                <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Ingrédients</h2>
+                {% if recette.ingredients.count() > 0 %}
+                <ul class="list-group list-group-flush">
+                    {% for ri in recette.ingredients %}
+                    <li class="list-group-item">
+                        <strong>{{ ri.quantite }} {{ ri.unite }}</strong> {{ ri.ingredient.nom }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">Aucun ingrédient renseigné</p>
+                {% endif %}
+
+                <!-- Instructions -->
+                <h2 class="mt-4 mb-3"><i class="bi bi-list-ol"></i> Préparation</h2>
+                {% if recette.instructions.count() > 0 %}
+                <ol class="list-group list-group-numbered">
+                    {% for instruction in recette.instructions %}
+                    <li class="list-group-item">{{ instruction.texte }}</li>
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <p class="text-muted">Aucune instruction renseignée</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Actions</h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('recettes.edit', id=recette.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                    <form method="POST" action="{{ url_for('recettes.delete', id=recette.id) }}" onsubmit="return confirmDelete('Êtes-vous sûr de vouloir supprimer cette recette ?');">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+                    <hr>
+                    <a href="{{ url_for('recettes.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour aux recettes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> Informations</h5>
+                <p class="card-text">
+                    <small class="text-muted">
+                        Créée le {{ recette.created_at.strftime('%d/%m/%Y') }}
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

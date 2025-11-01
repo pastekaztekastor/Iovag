@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-house-door"></i> Tableau de bord
+        </h1>
+        <p class="lead text-muted">Bienvenue {{ current_user.username }} !</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('menus.create') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Nouveau menu
+        </a>
+    </div>
+</div>
+
+<!-- Menus récents -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-calendar-week text-primary"></i> Mes menus récents</h2>
+            <a href="{{ url_for('menus.index') }}" class="btn btn-outline-primary">
+                Voir tous mes menus <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        {% if menus_recents %}
+        <div class="row">
+            {% for menu in menus_recents %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ menu.nom }}</h5>
+                        <p class="card-text text-muted">
+                            <i class="bi bi-calendar3"></i> {{ menu.date_debut.strftime('%d/%m/%Y') }}<br>
+                            <i class="bi bi-people"></i> {{ menu.nb_personnes }} personne(s)
+                        </p>
+                        {% if menu.description %}
+                        <p class="card-text">{{ menu.description[:100] }}...</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a href="{{ url_for('menus.detail', id=menu.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Voir
+                        </a>
+                        <a href="{{ url_for('menus.generer_courses', id=menu.id) }}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-cart"></i> Liste de courses
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Vous n'avez pas encore créé de menu.
+            <a href="{{ url_for('menus.create') }}" class="alert-link">Créer mon premier menu</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recettes favorites -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2><i class="bi bi-star-fill text-warning"></i> Mes recettes favorites</h2>
+            <a href="{{ url_for('recettes.index') }}" class="btn btn-outline-primary">
+                Voir toutes mes recettes <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        {% if recettes_favorites %}
+        <div class="row">
+            {% for recette in recettes_favorites %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    {% if recette.photo_url %}
+                    <img src="{{ recette.photo_url }}" class="card-img-top" alt="{{ recette.nom }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ recette.nom }}</h5>
+                        <div class="star-rating mb-2">
+                            {% for i in range(5) %}
+                                {% if i < recette.evaluation %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <p class="card-text text-muted">
+                            <small>
+                                <i class="bi bi-people"></i> {{ recette.portions }} portions
+                                {% if recette.temps_preparation %}
+                                    | <i class="bi bi-clock"></i> {{ recette.temps_preparation }}
+                                {% endif %}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Voir la recette
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Vous n'avez pas encore de recettes favorites.
+            <a href="{{ url_for('recettes.create') }}" class="alert-link">Ajouter une recette</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ menu.nom }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('menus.index') }}">Menus</a></li>
+                <li class="breadcrumb-item active">{{ menu.nom }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="card-title">{{ menu.nom }}</h1>
+
+                {% if menu.theme %}
+                <span class="badge bg-info mb-3">{{ menu.theme }}</span>
+                {% endif %}
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-calendar3 fs-4 text-primary me-2"></i>
+                            <div>
+                                <small class="text-muted d-block">Date de début</small>
+                                <strong>{{ menu.date_debut.strftime('%d/%m/%Y') }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-people fs-4 text-primary me-2"></i>
+                            <div>
+                                <small class="text-muted d-block">Nombre de personnes</small>
+                                <strong>{{ menu.nb_personnes }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if menu.description %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> {{ menu.description }}
+                </div>
+                {% endif %}
+
+                <!-- Planning de la semaine -->
+                <h2 class="mt-4 mb-3"><i class="bi bi-calendar-week"></i> Planning de la semaine</h2>
+
+                {% set jours_noms = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] %}
+                {% for i in range(7) %}
+                {% set jour = menu.jours|selectattr('jour_semaine', 'equalto', i)|first %}
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">{{ jours_noms[i] }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6 class="text-muted"><i class="bi bi-sunrise"></i> Petit-déjeuner</h6>
+                                {% if jour and jour.petit_dejeuner_recette %}
+                                <a href="{{ url_for('recettes.detail', id=jour.petit_dejeuner_id) }}">
+                                    {{ jour.petit_dejeuner_recette.nom }}
+                                </a>
+                                {% else %}
+                                <p class="text-muted"><small>Non défini</small></p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-muted"><i class="bi bi-sun"></i> Déjeuner</h6>
+                                {% if jour and jour.dejeuner_recette %}
+                                <a href="{{ url_for('recettes.detail', id=jour.dejeuner_id) }}">
+                                    {{ jour.dejeuner_recette.nom }}
+                                </a>
+                                {% else %}
+                                <p class="text-muted"><small>Non défini</small></p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-muted"><i class="bi bi-moon-stars"></i> Dîner</h6>
+                                {% if jour and jour.diner_recette %}
+                                <a href="{{ url_for('recettes.detail', id=jour.diner_id) }}">
+                                    {{ jour.diner_recette.nom }}
+                                </a>
+                                {% else %}
+                                <p class="text-muted"><small>Non défini</small></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Actions</h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('menus.generer_courses', id=menu.id) }}" class="btn btn-success">
+                        <i class="bi bi-cart-plus"></i> Générer la liste de courses
+                    </a>
+                    <a href="{{ url_for('menus.edit', id=menu.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                    <form method="POST" action="{{ url_for('menus.delete', id=menu.id) }}" onsubmit="return confirmDelete('Êtes-vous sûr de vouloir supprimer ce menu ?');">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+                    <hr>
+                    <a href="{{ url_for('menus.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour aux menus
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> Informations</h5>
+                <p class="card-text">
+                    <small class="text-muted">
+                        Créé le {{ menu.created_at.strftime('%d/%m/%Y') }}
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

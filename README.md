@@ -91,3 +91,47 @@ MIT
 ## 👨‍💻 Auteur
 
 Mathurin Champémont
+
+## Plan de dev
+
+Phase 1 : Setup (Semaine 1)
+
+  - Init projet Flask
+  - Config BDD et migrations
+  - Authentification basique
+  - Structure du projet
+
+  Phase 2 : Recettes (Semaine 2)
+
+  - CRUD recettes
+  - Gestion ingrédients
+  - Interface de recherche
+
+  Phase 3 : Menus (Semaine 3)
+
+  - CRUD menus
+  - Assignation recettes
+  - Vue calendrier
+
+  Phase 4 : Liste de Courses (Semaine 4)
+
+  - Génération automatique
+  - Interface de gestion
+  - Export PDF
+
+  Phase 5 : Polish & Deploy (Semaine 5)
+
+  - Tests
+  - Design responsive
+  - Déploiement (Heroku/Render/Railway)
+
+## Fonctionnalités Futures (v2.0+)
+
+  - 📊 Statistiques (recettes préférées, fréquence)
+  - 🏪 Gestion du stock (éviter achats inutiles)
+  - 📱 Mode hors-ligne (PWA)
+  - 🔗 Partage de menus/recettes
+  - 🌍 Import de recettes depuis URL
+  - 📧 Email de la liste de courses
+  - 🎨 Thèmes visuels personnalisables
+  - 📅 Planification multi-semaines
