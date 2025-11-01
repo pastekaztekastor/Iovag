@@ -46,12 +46,32 @@ class Ingredient(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False, unique=True, index=True)
-    categorie = db.Column(db.String(50), nullable=True, index=True)
+    categorie = db.Column(db.String(50), nullable=True, index=True)  # Rayon magasin: Fruits & Légumes, Viandes, etc.
     unite_mesure = db.Column(db.String(20))  # g, ml, pièce, etc.
+    duree_conservation = db.Column(db.Integer)  # Durée en jours
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
     recette_ingredients = db.relationship('RecetteIngredient', backref='ingredient', lazy='dynamic')
     stock = db.relationship('Stock', backref='ingredient', lazy='dynamic')
+
+    # Catégories prédéfinies pour les rayons magasin
+    CATEGORIES = [
+        'Fruits & Légumes',
+        'Viandes & Poissons',
+        'Produits laitiers',
+        'Épicerie salée',
+        'Épicerie sucrée',
+        'Surgelés',
+        'Boissons',
+        'Pain & Viennoiseries',
+        'Condiments & Sauces',
+        'Herbes & Épices',
+        'Conserves',
+        'Pâtes & Riz',
+        'Huiles & Vinaigres',
+        'Autre'
+    ]
 
     def __repr__(self):
         return f'<Ingredient {self.nom}>'

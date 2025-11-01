@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Base d'ingrédients{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-egg"></i> Base d'ingrédients
+        </h1>
+        <p class="lead text-muted">{{ ingredients|length }} ingrédient(s)</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('ingredients.create') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Nouvel ingrédient
+        </a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <input type="text" class="form-control" id="searchIngredients" placeholder="Rechercher un ingrédient...">
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filterCategorie">
+            <option value="">Toutes les catégories</option>
+            {% for categorie in categories %}
+            <option value="{{ categorie }}">{{ categorie }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<!-- Liste des ingrédients -->
+{% if ingredients %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Catégorie</th>
+                <th>Unité</th>
+                <th>Conservation (jours)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ingredient in ingredients %}
+            <tr>
+                <td><strong>{{ ingredient.nom }}</strong></td>
+                <td>
+                    {% if ingredient.categorie %}
+                    <span class="badge bg-info">{{ ingredient.categorie }}</span>
+                    {% else %}
+                    <span class="text-muted">Non définie</span>
+                    {% endif %}
+                </td>
+                <td>{{ ingredient.unite_mesure or '-' }}</td>
+                <td>
+                    {% if ingredient.duree_conservation %}
+                    {{ ingredient.duree_conservation }} jours
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('ingredients.edit', id=ingredient.id) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('ingredients.delete', id=ingredient.id) }}" class="d-inline" onsubmit="return confirmDelete('Êtes-vous sûr de vouloir supprimer cet ingrédient ?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Aucun ingrédient dans la base.
+    <a href="{{ url_for('ingredients.create') }}" class="alert-link">Ajouter le premier</a>
+</div>
+{% endif %}
+{% endblock %}

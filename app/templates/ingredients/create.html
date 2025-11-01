@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvel ingrédient{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('ingredients.index') }}">Ingrédients</a></li>
+                <li class="breadcrumb-item active">Nouvel ingrédient</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 offset-lg-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title mb-4">
+                    <i class="bi bi-plus-circle"></i> Nouvel ingrédient
+                </h1>
+
+                <form method="POST" action="{{ url_for('ingredients.create') }}">
+                    <div class="mb-3">
+                        <label for="nom" class="form-label">Nom *</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="categorie" class="form-label">Catégorie (rayon magasin)</label>
+                        <select class="form-select" id="categorie" name="categorie">
+                            <option value="">-- Sélectionner une catégorie --</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Pour organiser votre liste de courses par rayon</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="unite_mesure" class="form-label">Unité de mesure</label>
+                        <input type="text" class="form-control" id="unite_mesure" name="unite_mesure" placeholder="g, ml, pièce, kg...">
+                        <div class="form-text">Unité par défaut pour cet ingrédient</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="duree_conservation" class="form-label">Durée de conservation</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="duree_conservation" name="duree_conservation" min="1" placeholder="7">
+                            <span class="input-group-text">jours</span>
+                        </div>
+                        <div class="form-text">Durée moyenne de conservation en jours</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('ingredients.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Créer l'ingrédient
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
