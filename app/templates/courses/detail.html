@@ -29,8 +29,8 @@
                 </p>
                 {% endif %}
 
-                {% set nb_ingredients = liste.ingredients|length %}
-                {% set nb_achetes = liste.ingredients|selectattr('achete', 'equalto', true)|list|length %}
+                {% set nb_ingredients = liste.ingredients.count() %}
+                {% set nb_achetes = liste.ingredients.filter_by(achete=True).count() %}
 
                 <div class="alert {% if nb_achetes == nb_ingredients %}alert-success{% else %}alert-info{% endif %}">
                     <strong>Progression :</strong> {{ nb_achetes }}/{{ nb_ingredients }} article(s) acheté(s)
@@ -46,10 +46,10 @@
                 <!-- Liste des ingrédients -->
                 <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Articles à acheter</h2>
 
-                {% if liste.ingredients %}
+                {% if liste.ingredients.count() > 0 %}
                 <form id="updateForm">
                     <ul class="list-group">
-                        {% for item in liste.ingredients %}
+                        {% for item in liste.ingredients.all() %}
                         <li class="list-group-item">
                             <div class="form-check">
                                 <input class="form-check-input ingredient-checkbox"

@@ -1,8 +1,8 @@
-"""Initial schema with updated liste_courses structure
+"""Initial schema - categorie nullable
 
-Revision ID: b8fb0ffea4d1
+Revision ID: 9e6a16adef93
 Revises: 
-Create Date: 2025-11-01 22:22:32.897018
+Create Date: 2025-11-01 23:08:13.108511
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'b8fb0ffea4d1'
+revision = '9e6a16adef93'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,7 +21,7 @@ def upgrade():
     op.create_table('ingredients',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('nom', sa.String(length=100), nullable=False),
-    sa.Column('categorie', sa.String(length=50), nullable=False),
+    sa.Column('categorie', sa.String(length=50), nullable=True),
     sa.Column('unite_mesure', sa.String(length=20), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -107,13 +107,13 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('menu_id', sa.Integer(), nullable=False),
     sa.Column('jour_semaine', sa.Integer(), nullable=False),
-    sa.Column('petit_dejeuner_recette_id', sa.Integer(), nullable=True),
-    sa.Column('dejeuner_recette_id', sa.Integer(), nullable=True),
-    sa.Column('diner_recette_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['dejeuner_recette_id'], ['recettes.id'], ),
-    sa.ForeignKeyConstraint(['diner_recette_id'], ['recettes.id'], ),
+    sa.Column('petit_dejeuner_id', sa.Integer(), nullable=True),
+    sa.Column('dejeuner_id', sa.Integer(), nullable=True),
+    sa.Column('diner_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['dejeuner_id'], ['recettes.id'], ),
+    sa.ForeignKeyConstraint(['diner_id'], ['recettes.id'], ),
     sa.ForeignKeyConstraint(['menu_id'], ['menus.id'], ),
-    sa.ForeignKeyConstraint(['petit_dejeuner_recette_id'], ['recettes.id'], ),
+    sa.ForeignKeyConstraint(['petit_dejeuner_id'], ['recettes.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('recette_ingredients',

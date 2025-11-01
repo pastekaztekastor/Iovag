@@ -43,7 +43,7 @@
                 </p>
 
                 {% set nb_ingredients = liste.ingredients.count() %}
-                {% set nb_achetes = liste.ingredients|selectattr('achete', 'equalto', true)|list|length %}
+                {% set nb_achetes = liste.ingredients.filter_by(achete=True).count() %}
 
                 <div class="progress mb-2" style="height: 25px;">
                     <div class="progress-bar {% if nb_achetes == nb_ingredients %}bg-success{% endif %}"

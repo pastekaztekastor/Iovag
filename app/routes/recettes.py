@@ -96,8 +96,11 @@ def create():
                     db.session.flush()
 
                 # Créer le lien recette-ingrédient
-                quantite = float(quantites[i]) if i < len(quantites) and quantites[i] else 0
-                unite = unites[i].strip() if i < len(unites) else ''
+                try:
+                    quantite = float(quantites[i]) if i < len(quantites) and quantites[i].strip() else 0
+                except (ValueError, AttributeError):
+                    quantite = 0
+                unite = unites[i].strip() if i < len(unites) and unites[i] else ''
 
                 recette_ingredient = RecetteIngredient(
                     recette_id=recette.id,

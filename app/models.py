@@ -46,7 +46,7 @@ class Ingredient(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False, unique=True, index=True)
-    categorie = db.Column(db.String(50), nullable=False, index=True)
+    categorie = db.Column(db.String(50), nullable=True, index=True)
     unite_mesure = db.Column(db.String(20))  # g, ml, pièce, etc.
 
     # Relations
@@ -206,14 +206,14 @@ class MenuJour(db.Model):
     jour_semaine = db.Column(db.Integer, nullable=False)  # 0=Lundi, 6=Dimanche
 
     # Recettes pour chaque repas (nullable car tous les repas ne sont pas toujours planifiés)
-    petit_dejeuner_recette_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
-    dejeuner_recette_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
-    diner_recette_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
+    petit_dejeuner_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
+    dejeuner_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
+    diner_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
 
     # Relations
-    petit_dejeuner_recette = db.relationship('Recette', foreign_keys=[petit_dejeuner_recette_id])
-    dejeuner_recette = db.relationship('Recette', foreign_keys=[dejeuner_recette_id])
-    diner_recette = db.relationship('Recette', foreign_keys=[diner_recette_id])
+    petit_dejeuner_recette = db.relationship('Recette', foreign_keys=[petit_dejeuner_id])
+    dejeuner_recette = db.relationship('Recette', foreign_keys=[dejeuner_id])
+    diner_recette = db.relationship('Recette', foreign_keys=[diner_id])
 
     @property
     def nom_jour(self):

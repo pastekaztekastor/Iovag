@@ -135,3 +135,16 @@ Phase 1 : Setup (Semaine 1)
   - 📧 Email de la liste de courses
   - 🎨 Thèmes visuels personnalisables
   - 📅 Planification multi-semaines
+
+## TODO
+
+  1. Lancer l'application: FLASK_APP=run.py 
+  venv/bin/flask run
+  2. Créer un premier utilisateur
+  3. Tester la création de recettes, menus et listes
+  4. Implémenter l'export PDF des listes de courses
+  (WeasyPrint)
+  5. Ajouter la recherche/filtres côté client
+  (JavaScript)
+  6. Implémenter l'édition complète des
+  ingrédients/instructions de recettes
