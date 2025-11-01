@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-lg-8 text-center">
+        <h1 class="display-3 fw-bold text-primary mb-4">
+            <i class="bi bi-cup-hot-fill"></i> Iovag
+        </h1>
+        <p class="lead text-muted mb-4">Ici on veille à la gourmandise</p>
+        <p class="fs-5 mb-5">
+            Planifiez vos menus hebdomadaires, gérez vos recettes et générez automatiquement
+            vos listes de courses. Avec un système intelligent de gestion des portions !
+        </p>
+        <div class="d-grid gap-3 d-md-flex justify-content-md-center">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-5">
+                <i class="bi bi-person-plus"></i> Commencer gratuitement
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg px-5">
+                <i class="bi bi-box-arrow-in-right"></i> Se connecter
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row my-5">
+    <div class="col-md-4 text-center mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <i class="bi bi-book display-1 text-primary mb-3"></i>
+                <h3 class="card-title">Vos Recettes</h3>
+                <p class="card-text">
+                    Créez et organisez toutes vos recettes préférées avec notes et évaluations
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <i class="bi bi-calendar-week display-1 text-primary mb-3"></i>
+                <h3 class="card-title">Menus Hebdomadaires</h3>
+                <p class="card-text">
+                    Planifiez facilement tous vos repas de la semaine
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <i class="bi bi-cart display-1 text-primary mb-3"></i>
+                <h3 class="card-title">Liste de Courses</h3>
+                <p class="card-text">
+                    Génération automatique avec ajustement intelligent des quantités
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
