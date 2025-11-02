@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter au stock{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('stock.index') }}">Mon Stock</a></li>
+                <li class="breadcrumb-item active">Ajouter</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 offset-lg-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title mb-4">
+                    <i class="bi bi-plus-circle"></i> Ajouter au stock
+                </h1>
+
+                <form method="POST" action="{{ url_for('stock.add') }}">
+                    <div class="mb-3">
+                        <label for="ingredient_id" class="form-label">Ingrédient *</label>
+                        <select class="form-select" id="ingredient_id" name="ingredient_id" required onchange="updateUnite()">
+                            <option value="">Sélectionnez un ingrédient</option>
+                            {% for ingredient in ingredients %}
+                            <option value="{{ ingredient.id }}"
+                                    data-unite="{{ ingredient.unite_mesure or '' }}"
+                                    data-lieu="{{ ingredient.lieu_rangement or '' }}"
+                                    data-categorie="{{ ingredient.categorie or '' }}">
+                                {{ ingredient.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">
+                            L'ingrédient doit exister dans la base. <a href="{{ url_for('ingredients.create') }}">Créer un nouvel ingrédient</a>
+                        </small>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="quantite" class="form-label">Quantité *</label>
+                            <input type="number" class="form-control" id="quantite" name="quantite"
+                                   min="0" step="0.1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="unite" class="form-label">Unité *</label>
+                            <input type="text" class="form-control" id="unite" name="unite"
+                                   placeholder="g, ml, pièce..." required>
+                        </div>
+                    </div>
+
+                    <!-- Informations sur l'ingrédient sélectionné -->
+                    <div id="ingredient-info" class="alert alert-info d-none mb-3">
+                        <h6><i class="bi bi-info-circle"></i> Informations</h6>
+                        <div id="info-content"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="raison" class="form-label">Raison</label>
+                        <select class="form-select" id="raison" name="raison">
+                            <option value="Ajout manuel">Ajout manuel</option>
+                            <option value="Achat">Achat</option>
+                            <option value="Inventaire initial">Inventaire initial</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Ajouter au stock
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateUnite() {
+    const select = document.getElementById('ingredient_id');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (selectedOption.value) {
+        // Auto-remplir l'unité
+        const unite = selectedOption.getAttribute('data-unite');
+        if (unite) {
+            document.getElementById('unite').value = unite;
+        }
+
+        // Afficher les informations
+        const lieu = selectedOption.getAttribute('data-lieu');
+        const categorie = selectedOption.getAttribute('data-categorie');
+
+        let infoHTML = '<ul class="mb-0">';
+        if (categorie) {
+            infoHTML += `<li><strong>Catégorie:</strong> ${categorie}</li>`;
+        }
+        if (lieu) {
+            infoHTML += `<li><strong>Lieu de rangement:</strong> <span class="badge bg-secondary"><i class="bi bi-geo-alt"></i> ${lieu}</span></li>`;
+        }
+        if (unite) {
+            infoHTML += `<li><strong>Unité habituelle:</strong> ${unite}</li>`;
+        }
+        infoHTML += '</ul>';
+
+        document.getElementById('info-content').innerHTML = infoHTML;
+        document.getElementById('ingredient-info').classList.remove('d-none');
+    } else {
+        document.getElementById('ingredient-info').classList.add('d-none');
+    }
+}
+</script>
+{% endblock %}

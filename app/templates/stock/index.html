@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Mon Stock{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                <li class="breadcrumb-item active">Mon Stock</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            <i class="bi bi-box-seam"></i> Mon Stock
+            {% if nb_stock_bas > 0 %}
+            <span class="badge bg-warning text-dark">
+                <i class="bi bi-exclamation-triangle"></i> {{ nb_stock_bas }} stock(s) bas
+            </span>
+            {% endif %}
+        </h1>
+        <p class="lead text-muted" id="stock-count">{{ stocks|length }} ingrédient(s) en stock</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('stock.add') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Ajouter au stock
+        </a>
+        <a href="{{ url_for('stock.par_lieu') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-geo-alt"></i> Vue par lieu
+        </a>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title"><i class="bi bi-funnel"></i> Filtres</h5>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label for="searchStock" class="form-label">Recherche</label>
+                <input type="text" class="form-control" id="searchStock" placeholder="Nom de l'ingrédient...">
+            </div>
+            <div class="col-md-3">
+                <label for="filterLieu" class="form-label">Lieu de rangement</label>
+                <select class="form-select" id="filterLieu">
+                    <option value="">Tous les lieux</option>
+                    {% for lieu in lieux_rangement %}
+                    <option value="{{ lieu }}">{{ lieu }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterStockBas">
+                    <label class="form-check-label" for="filterStockBas">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> Stock bas uniquement
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                    <i class="bi bi-arrow-clockwise"></i> Réinitialiser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau du stock -->
+{% if stocks %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Ingrédient</th>
+                        <th>Quantité</th>
+                        <th>Lieu</th>
+                        <th>Dernière MAJ</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    {% set seuils = {
+                        'Fruits & Légumes': 200,
+                        'Viandes & Poissons': 200,
+                        'Produits laitiers': 100,
+                        'Épicerie salée': 100,
+                        'Épicerie sucrée': 100,
+                        'Surgelés': 200,
+                        'Boissons': 250,
+                        'Pain & Viennoiseries': 1,
+                        'Condiments & Sauces': 50,
+                        'Herbes & Épices': 10,
+                        'Conserves': 1,
+                        'Pâtes & Riz': 200,
+                        'Huiles & Vinaigres': 100,
+                        'Autre': 50
+                    } %}
+                    {% set seuil = seuils.get(stock.ingredient.categorie, 50) %}
+                    {% set is_stock_bas = stock.quantite <= seuil %}
+                    <tr class="stock-row"
+                        data-nom="{{ stock.ingredient.nom|lower }}"
+                        data-lieu="{{ stock.ingredient.lieu_rangement or '' }}"
+                        data-stock-bas="{{ is_stock_bas|lower }}"
+                        id="stock-row-{{ stock.id }}">
+                        <td>
+                            <strong>{{ stock.ingredient.nom }}</strong>
+                            {% if stock.ingredient.categorie %}
+                            <br><small class="text-muted">{{ stock.ingredient.categorie }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span id="quantite-{{ stock.id }}" class="{% if is_stock_bas %}text-warning fw-bold{% endif %}">
+                                {% if is_stock_bas %}<i class="bi bi-exclamation-triangle"></i> {% endif %}
+                                {{ stock.quantite }} {{ stock.unite }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if stock.ingredient.lieu_rangement %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-geo-alt"></i> {{ stock.ingredient.lieu_rangement }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ stock.updated_at.strftime('%d/%m/%Y') }}</small>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-danger" onclick="quickAdjust({{ stock.id }}, 'decrease', 10, '{{ stock.unite }}')">
+                                    <i class="bi bi-dash"></i> 10
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#adjustModal{{ stock.id }}">
+                                    <i class="bi bi-pencil"></i> Ajuster
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="quickAdjust({{ stock.id }}, 'increase', 10, '{{ stock.unite }}')">
+                                    <i class="bi bi-plus"></i> 10
+                                </button>
+                            </div>
+                            <form method="POST" action="{{ url_for('stock.delete', id=stock.id) }}" style="display:inline;" onsubmit="return confirmDelete('Retirer {{ stock.ingredient.nom }} du stock ?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <!-- Modal d'ajustement détaillé -->
+                    <div class="modal fade" id="adjustModal{{ stock.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Ajuster : {{ stock.ingredient.nom }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Quantité actuelle : <strong id="modal-quantite-{{ stock.id }}">{{ stock.quantite }} {{ stock.unite }}</strong></p>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Action</label>
+                                        <select class="form-select" id="modal-action-{{ stock.id }}">
+                                            <option value="increase">Ajouter (+)</option>
+                                            <option value="decrease">Retirer (-)</option>
+                                            <option value="set">Définir une nouvelle quantité</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Quantité</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="modal-quantite-input-{{ stock.id }}"
+                                                   value="10" min="0" step="1">
+                                            <span class="input-group-text">{{ stock.unite }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">Raison (optionnel)</label>
+                                        <select class="form-select" id="modal-raison-{{ stock.id }}">
+                                            <option value="Achat manuel">Achat manuel</option>
+                                            <option value="Consommation">Consommation</option>
+                                            <option value="Péremption">Péremption</option>
+                                            <option value="Inventaire">Inventaire (correction)</option>
+                                            <option value="Autre">Autre</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                    <button type="button" class="btn btn-primary" onclick="detailedAdjust({{ stock.id }}, '{{ stock.unite }}')">
+                                        Valider
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Votre stock est vide. Ajoutez des ingrédients pour commencer!
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filtrage du stock
+function filterStock() {
+    const searchValue = document.getElementById('searchStock').value.toLowerCase();
+    const lieuValue = document.getElementById('filterLieu').value;
+    const stockBasOnly = document.getElementById('filterStockBas').checked;
+
+    const rows = document.querySelectorAll('.stock-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const nom = row.getAttribute('data-nom');
+        const lieu = row.getAttribute('data-lieu');
+        const isStockBas = row.getAttribute('data-stock-bas') === 'true';
+
+        const matchSearch = nom.includes(searchValue);
+        const matchLieu = !lieuValue || lieu === lieuValue;
+        const matchStockBas = !stockBasOnly || isStockBas;
+
+        if (matchSearch && matchLieu && matchStockBas) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Update counter
+    const total = rows.length;
+    const countElement = document.getElementById('stock-count');
+    if (visibleCount === total) {
+        countElement.textContent = `${total} ingrédient(s) en stock`;
+    } else {
+        countElement.textContent = `${visibleCount} ingrédient(s) affiché(s) sur ${total}`;
+    }
+}
+
+function resetFilters() {
+    document.getElementById('searchStock').value = '';
+    document.getElementById('filterLieu').value = '';
+    document.getElementById('filterStockBas').checked = false;
+    filterStock();
+}
+
+// Ajustement rapide (+/- 10)
+function quickAdjust(stockId, action, quantite, unite) {
+    fetch(`/stock/adjust/${stockId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: action, quantite: quantite})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const quantiteSpan = document.getElementById(`quantite-${stockId}`);
+            const newText = data.nouvelle_quantite + ' ' + unite;
+
+            if (data.stock_bas) {
+                quantiteSpan.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + newText;
+                quantiteSpan.className = 'text-warning fw-bold';
+            } else {
+                quantiteSpan.textContent = newText;
+                quantiteSpan.className = '';
+            }
+
+            // Update modal if open
+            const modalQuantite = document.getElementById(`modal-quantite-${stockId}`);
+            if (modalQuantite) {
+                modalQuantite.textContent = newText;
+            }
+
+            // Reload page to update stock bas count
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Ajustement détaillé
+function detailedAdjust(stockId, unite) {
+    const action = document.getElementById(`modal-action-${stockId}`).value;
+    const quantite = parseFloat(document.getElementById(`modal-quantite-input-${stockId}`).value);
+    const raison = document.getElementById(`modal-raison-${stockId}`).value;
+
+    fetch(`/stock/adjust/${stockId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: action, quantite: quantite, raison: raison})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modalElement = document.getElementById(`adjustModal${stockId}`);
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            modal.hide();
+
+            // Update display
+            const quantiteSpan = document.getElementById(`quantite-${stockId}`);
+            const newText = data.nouvelle_quantite + ' ' + unite;
+
+            if (data.stock_bas) {
+                quantiteSpan.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + newText;
+                quantiteSpan.className = 'text-warning fw-bold';
+            } else {
+                quantiteSpan.textContent = newText;
+                quantiteSpan.className = '';
+            }
+
+            // Reload page to update stock bas count
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Event listeners
+document.getElementById('searchStock').addEventListener('input', filterStock);
+document.getElementById('filterLieu').addEventListener('change', filterStock);
+document.getElementById('filterStockBas').addEventListener('change', filterStock);
+</script>
+{% endblock %}

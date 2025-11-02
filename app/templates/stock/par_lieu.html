@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Stock par lieu{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('stock.index') }}">Mon Stock</a></li>
+                <li class="breadcrumb-item active">Par lieu</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            <i class="bi bi-geo-alt"></i> Stock par lieu de rangement
+            {% if nb_stock_bas > 0 %}
+            <span class="badge bg-warning text-dark">
+                <i class="bi bi-exclamation-triangle"></i> {{ nb_stock_bas }} stock(s) bas
+            </span>
+            {% endif %}
+        </h1>
+        <p class="lead text-muted">Mode pointage - organisé par zone de rangement</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-list-ul"></i> Vue liste
+        </a>
+        <a href="{{ url_for('stock.add') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Ajouter au stock
+        </a>
+    </div>
+</div>
+
+<!-- Icônes par type de lieu -->
+{% set icones_lieux = {
+    'Frigo (haut)': 'snow2',
+    'Frigo (milieu)': 'snow2',
+    'Frigo (bas)': 'snow2',
+    'Frigo (bac à légumes)': 'snow2',
+    'Frigo (porte)': 'snow2',
+    'Congélateur': 'snow',
+    'Placard sec': 'box-seam',
+    'Placard épices': 'box-seam',
+    'Corbeille à fruits': 'basket',
+    'Cave': 'house-door',
+    'Autre': 'question-circle',
+    'Non défini': 'question-circle'
+} %}
+
+{% if stock_par_lieu %}
+    {% for lieu, stocks in stock_par_lieu.items()|sort %}
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-{{ icones_lieux.get(lieu, 'geo-alt') }}"></i> {{ lieu }}
+                <span class="badge bg-light text-dark">{{ stocks|length }}</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for stock in stocks %}
+                {% set seuils = {
+                    'Fruits & Légumes': 200,
+                    'Viandes & Poissons': 200,
+                    'Produits laitiers': 100,
+                    'Épicerie salée': 100,
+                    'Épicerie sucrée': 100,
+                    'Surgelés': 200,
+                    'Boissons': 250,
+                    'Pain & Viennoiseries': 1,
+                    'Condiments & Sauces': 50,
+                    'Herbes & Épices': 10,
+                    'Conserves': 1,
+                    'Pâtes & Riz': 200,
+                    'Huiles & Vinaigres': 100,
+                    'Autre': 50
+                } %}
+                {% set seuil = seuils.get(stock.ingredient.categorie, 50) %}
+                {% set is_stock_bas = stock.quantite <= seuil %}
+
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100 {% if is_stock_bas %}border-warning{% endif %}">
+                        <div class="card-body">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="check-{{ stock.id }}">
+                                <label class="form-check-label fw-bold" for="check-{{ stock.id }}">
+                                    {{ stock.ingredient.nom }}
+                                </label>
+                            </div>
+
+                            <div class="mb-2">
+                                <span class="{% if is_stock_bas %}text-warning fw-bold{% else %}text-muted{% endif %}" id="quantite-{{ stock.id }}">
+                                    {% if is_stock_bas %}<i class="bi bi-exclamation-triangle"></i> {% endif %}
+                                    {{ stock.quantite }} {{ stock.unite }}
+                                </span>
+                            </div>
+
+                            {% if stock.ingredient.categorie %}
+                            <div class="mb-2">
+                                <small class="text-muted">{{ stock.ingredient.categorie }}</small>
+                            </div>
+                            {% endif %}
+
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <button type="button" class="btn btn-outline-danger" onclick="quickAdjust({{ stock.id }}, 'decrease', 10, '{{ stock.unite }}')">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#adjustModal{{ stock.id }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="quickAdjust({{ stock.id }}, 'increase', 10, '{{ stock.unite }}')">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal d'ajustement détaillé -->
+                <div class="modal fade" id="adjustModal{{ stock.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Ajuster : {{ stock.ingredient.nom }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Quantité actuelle : <strong id="modal-quantite-{{ stock.id }}">{{ stock.quantite }} {{ stock.unite }}</strong></p>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Action</label>
+                                    <select class="form-select" id="modal-action-{{ stock.id }}">
+                                        <option value="increase">Ajouter (+)</option>
+                                        <option value="decrease">Retirer (-)</option>
+                                        <option value="set">Définir une nouvelle quantité</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Quantité</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="modal-quantite-input-{{ stock.id }}"
+                                               value="10" min="0" step="1">
+                                        <span class="input-group-text">{{ stock.unite }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Raison (optionnel)</label>
+                                    <select class="form-select" id="modal-raison-{{ stock.id }}">
+                                        <option value="Achat manuel">Achat manuel</option>
+                                        <option value="Consommation">Consommation</option>
+                                        <option value="Péremption">Péremption</option>
+                                        <option value="Inventaire">Inventaire (correction)</option>
+                                        <option value="Autre">Autre</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="button" class="btn btn-primary" onclick="detailedAdjust({{ stock.id }}, '{{ stock.unite }}')">
+                                    Valider
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Votre stock est vide. Ajoutez des ingrédients pour commencer!
+</div>
+{% endif %}
+
+<!-- Bouton pour cocher/décocher tous -->
+{% if stock_par_lieu %}
+<div class="fixed-bottom p-3" style="right: 20px; left: auto; width: auto;">
+    <button class="btn btn-primary shadow" onclick="toggleAllChecks()">
+        <i class="bi bi-check-all"></i> Tout cocher/décocher
+    </button>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Ajustement rapide (+/- 10)
+function quickAdjust(stockId, action, quantite, unite) {
+    fetch(`/stock/adjust/${stockId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: action, quantite: quantite})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const quantiteSpan = document.getElementById(`quantite-${stockId}`);
+            const newText = data.nouvelle_quantite + ' ' + unite;
+
+            if (data.stock_bas) {
+                quantiteSpan.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + newText;
+                quantiteSpan.className = 'text-warning fw-bold';
+            } else {
+                quantiteSpan.textContent = newText;
+                quantiteSpan.className = 'text-muted';
+            }
+
+            // Update modal if open
+            const modalQuantite = document.getElementById(`modal-quantite-${stockId}`);
+            if (modalQuantite) {
+                modalQuantite.textContent = newText;
+            }
+
+            // Reload page to update stock bas count
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Ajustement détaillé
+function detailedAdjust(stockId, unite) {
+    const action = document.getElementById(`modal-action-${stockId}`).value;
+    const quantite = parseFloat(document.getElementById(`modal-quantite-input-${stockId}`).value);
+    const raison = document.getElementById(`modal-raison-${stockId}`).value;
+
+    fetch(`/stock/adjust/${stockId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({action: action, quantite: quantite, raison: raison})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modalElement = document.getElementById(`adjustModal${stockId}`);
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            modal.hide();
+
+            // Update display
+            const quantiteSpan = document.getElementById(`quantite-${stockId}`);
+            const newText = data.nouvelle_quantite + ' ' + unite;
+
+            if (data.stock_bas) {
+                quantiteSpan.innerHTML = '<i class="bi bi-exclamation-triangle"></i> ' + newText;
+                quantiteSpan.className = 'text-warning fw-bold';
+            } else {
+                quantiteSpan.textContent = newText;
+                quantiteSpan.className = 'text-muted';
+            }
+
+            // Reload page to update stock bas count
+            setTimeout(() => location.reload(), 500);
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+// Toggle toutes les checkboxes
+let allChecked = false;
+function toggleAllChecks() {
+    allChecked = !allChecked;
+    const checkboxes = document.querySelectorAll('.form-check-input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = allChecked);
+}
+</script>
+{% endblock %}
