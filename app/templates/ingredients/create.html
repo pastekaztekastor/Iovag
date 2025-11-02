@@ -54,7 +54,7 @@
                         <div class="form-text">Durée moyenne de conservation en jours</div>
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label for="lieu_rangement" class="form-label">Lieu de rangement</label>
                         <select class="form-select" id="lieu_rangement" name="lieu_rangement">
                             <option value="">-- Sélectionner un lieu --</option>
@@ -63,6 +63,33 @@
                             {% endfor %}
                         </select>
                         <div class="form-text">Où est rangé cet ingrédient (frigo, placard, etc.)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="stock_limite" class="form-label">Stock limite (seuil d'alerte)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="stock_limite" name="stock_limite" min="0" step="0.1" placeholder="1.0">
+                            <span class="input-group-text" id="unite_stock">unités</span>
+                        </div>
+                        <div class="form-text">Quantité minimale avant alerte de stock faible</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Mois de saison (fruits & légumes)</label>
+                        <div class="form-text mb-2">Sélectionnez les mois où cet ingrédient est de saison</div>
+                        <div class="row">
+                            {% for mois in mois_list %}
+                            <div class="col-md-4 col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="mois_saison" value="{{ mois }}" id="mois_{{ loop.index }}">
+                                    <label class="form-check-label" for="mois_{{ loop.index }}">
+                                        {{ mois }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text mt-2">Laissez vide si l'ingrédient est disponible toute l'année</div>
                     </div>
 
                     <hr>

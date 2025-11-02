@@ -17,7 +17,8 @@ def index():
     return render_template('ingredients/index.html',
                          ingredients=ingredients,
                          categories=Ingredient.CATEGORIES,
-                         lieux_rangement=Ingredient.LIEUX_RANGEMENT)
+                         lieux_rangement=Ingredient.LIEUX_RANGEMENT,
+                         mois_list=Ingredient.MOIS)
 
 
 @bp.route('/create', methods=['GET', 'POST'])
@@ -30,21 +31,30 @@ def create():
         unite_mesure = request.form.get('unite_mesure')
         duree_conservation = request.form.get('duree_conservation', type=int)
         lieu_rangement = request.form.get('lieu_rangement')
+        stock_limite = request.form.get('stock_limite', type=float)
+        mois_saison = request.form.getlist('mois_saison')  # Liste de mois
 
         # Vérifier si l'ingrédient existe déjà
         if Ingredient.query.filter_by(nom=nom).first():
             flash('Un ingrédient avec ce nom existe déjà', 'danger')
             return render_template('ingredients/create.html',
                                  categories=Ingredient.CATEGORIES,
-                                 lieux_rangement=Ingredient.LIEUX_RANGEMENT)
+                                 lieux_rangement=Ingredient.LIEUX_RANGEMENT,
+                                 mois_list=Ingredient.MOIS)
 
         ingredient = Ingredient(
             nom=nom,
             categorie=categorie if categorie else None,
             unite_mesure=unite_mesure if unite_mesure else None,
             duree_conservation=duree_conservation if duree_conservation else None,
-            lieu_rangement=lieu_rangement if lieu_rangement else None
+            lieu_rangement=lieu_rangement if lieu_rangement else None,
+            stock_limite=stock_limite if stock_limite else None
         )
+
+        # Définir les mois de saison
+        if mois_saison:
+            ingredient.set_mois_saison_list(mois_saison)
+
         db.session.add(ingredient)
         db.session.commit()
 
@@ -53,7 +63,8 @@ def create():
 
     return render_template('ingredients/create.html',
                          categories=Ingredient.CATEGORIES,
-                         lieux_rangement=Ingredient.LIEUX_RANGEMENT)
+                         lieux_rangement=Ingredient.LIEUX_RANGEMENT,
+                         mois_list=Ingredient.MOIS)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -68,6 +79,14 @@ def edit(id):
         ingredient.unite_mesure = request.form.get('unite_mesure') or None
         ingredient.duree_conservation = request.form.get('duree_conservation', type=int) or None
         ingredient.lieu_rangement = request.form.get('lieu_rangement') or None
+        ingredient.stock_limite = request.form.get('stock_limite', type=float) or None
+
+        # Récupérer et définir les mois de saison
+        mois_saison = request.form.getlist('mois_saison')
+        if mois_saison:
+            ingredient.set_mois_saison_list(mois_saison)
+        else:
+            ingredient.mois_saison = None
 
         db.session.commit()
         flash('Ingrédient modifié avec succès', 'success')
@@ -76,7 +95,8 @@ def edit(id):
     return render_template('ingredients/edit.html',
                          ingredient=ingredient,
                          categories=Ingredient.CATEGORIES,
-                         lieux_rangement=Ingredient.LIEUX_RANGEMENT)
+                         lieux_rangement=Ingredient.LIEUX_RANGEMENT,
+                         mois_list=Ingredient.MOIS)
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])
