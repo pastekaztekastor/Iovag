@@ -398,5 +398,39 @@ class Stock(db.Model):
     unite = db.Column(db.String(20))
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Seuils par défaut par catégorie
+    SEUILS_DEFAUT = {
+        'Fruits & Légumes': 200,
+        'Viandes & Poissons': 200,
+        'Produits laitiers': 100,
+        'Épicerie salée': 100,
+        'Épicerie sucrée': 100,
+        'Surgelés': 200,
+        'Boissons': 250,
+        'Pain & Viennoiseries': 1,
+        'Condiments & Sauces': 50,
+        'Herbes & Épices': 10,
+        'Conserves': 1,
+        'Pâtes & Riz': 200,
+        'Huiles & Vinaigres': 100,
+        'Autre': 50
+    }
+
+    def get_seuil_stock(self):
+        """
+        Retourne le seuil de stock à utiliser pour cet item
+        Utilise stock_limite de l'ingrédient si défini, sinon seuil par défaut
+        """
+        if self.ingredient.stock_limite is not None:
+            return self.ingredient.stock_limite
+
+        # Seuil par défaut selon catégorie
+        categorie = self.ingredient.categorie or 'Autre'
+        return self.SEUILS_DEFAUT.get(categorie, 50)
+
+    def est_stock_bas(self):
+        """Vérifie si le stock est en dessous du seuil"""
+        return self.quantite <= self.get_seuil_stock()
+
     def __repr__(self):
         return f'<Stock {self.quantite} {self.unite}>'

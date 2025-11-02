@@ -83,6 +83,7 @@
                     <tr>
                         <th>Ingrédient</th>
                         <th>Quantité</th>
+                        <th>Seuil</th>
                         <th>Lieu</th>
                         <th>Dernière MAJ</th>
                         <th class="text-end">Actions</th>
@@ -90,24 +91,8 @@
                 </thead>
                 <tbody>
                     {% for stock in stocks %}
-                    {% set seuils = {
-                        'Fruits & Légumes': 200,
-                        'Viandes & Poissons': 200,
-                        'Produits laitiers': 100,
-                        'Épicerie salée': 100,
-                        'Épicerie sucrée': 100,
-                        'Surgelés': 200,
-                        'Boissons': 250,
-                        'Pain & Viennoiseries': 1,
-                        'Condiments & Sauces': 50,
-                        'Herbes & Épices': 10,
-                        'Conserves': 1,
-                        'Pâtes & Riz': 200,
-                        'Huiles & Vinaigres': 100,
-                        'Autre': 50
-                    } %}
-                    {% set seuil = seuils.get(stock.ingredient.categorie, 50) %}
-                    {% set is_stock_bas = stock.quantite <= seuil %}
+                    {% set seuil = stock.get_seuil_stock() %}
+                    {% set is_stock_bas = stock.est_stock_bas() %}
                     <tr class="stock-row"
                         data-nom="{{ stock.ingredient.nom|lower }}"
                         data-lieu="{{ stock.ingredient.lieu_rangement or '' }}"
@@ -124,6 +109,16 @@
                                 {% if is_stock_bas %}<i class="bi bi-exclamation-triangle"></i> {% endif %}
                                 {{ stock.quantite }} {{ stock.unite }}
                             </span>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ seuil }} {{ stock.unite }}
+                                {% if stock.ingredient.stock_limite is not none %}
+                                <i class="bi bi-check-circle text-success" title="Seuil personnalisé"></i>
+                                {% else %}
+                                <i class="bi bi-gear text-secondary" title="Seuil par défaut"></i>
+                                {% endif %}
+                            </small>
                         </td>
                         <td>
                             {% if stock.ingredient.lieu_rangement %}

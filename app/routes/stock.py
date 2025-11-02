@@ -9,8 +9,8 @@ from sqlalchemy import func
 
 bp = Blueprint('stock', __name__, url_prefix='/stock')
 
-# Seuils de stock bas par catégorie (en pourcentage ou quantité)
-SEUILS_STOCK_BAS = {
+# Seuils de stock bas par défaut par catégorie (utilisés si stock_limite n'est pas défini)
+SEUILS_STOCK_BAS_DEFAUT = {
     'Fruits & Légumes': 200,  # grammes
     'Viandes & Poissons': 200,
     'Produits laitiers': 100,
@@ -29,11 +29,20 @@ SEUILS_STOCK_BAS = {
 
 
 def est_stock_bas(stock_item):
-    """Déterminer si un item de stock est bas"""
+    """
+    Déterminer si un item de stock est bas
+    Utilise en priorité le stock_limite de l'ingrédient,
+    sinon utilise les seuils par défaut selon la catégorie
+    """
+    # Utiliser stock_limite si défini
+    if stock_item.ingredient.stock_limite is not None:
+        return stock_item.quantite <= stock_item.ingredient.stock_limite
+
+    # Sinon utiliser le seuil par défaut de la catégorie
     if not stock_item.ingredient.categorie:
-        seuil = SEUILS_STOCK_BAS.get('Autre', 50)
+        seuil = SEUILS_STOCK_BAS_DEFAUT.get('Autre', 50)
     else:
-        seuil = SEUILS_STOCK_BAS.get(stock_item.ingredient.categorie, 50)
+        seuil = SEUILS_STOCK_BAS_DEFAUT.get(stock_item.ingredient.categorie, 50)
 
     return stock_item.quantite <= seuil
 
