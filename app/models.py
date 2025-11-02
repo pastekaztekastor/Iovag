@@ -50,6 +50,8 @@ class Ingredient(db.Model):
     unite_mesure = db.Column(db.String(20))  # g, ml, pièce, etc.
     duree_conservation = db.Column(db.Integer)  # Durée en jours
     lieu_rangement = db.Column(db.String(100))  # Où est rangé l'ingrédient (frigo, placard, congélateur, etc.)
+    mois_saison = db.Column(db.String(200))  # Mois de saison pour fruits/légumes (format: "Janvier,Février,Mars")
+    stock_limite = db.Column(db.Float)  # Quantité minimale en stock, seuil d'alerte
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
@@ -88,6 +90,36 @@ class Ingredient(db.Model):
         'Cave',
         'Autre'
     ]
+
+    # Mois de l'année
+    MOIS = [
+        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ]
+
+    def get_mois_saison_list(self):
+        """Retourne la liste des mois de saison"""
+        if not self.mois_saison:
+            return []
+        return [m.strip() for m in self.mois_saison.split(',') if m.strip()]
+
+    def set_mois_saison_list(self, mois_list):
+        """Définit les mois de saison à partir d'une liste"""
+        if mois_list:
+            self.mois_saison = ','.join(mois_list)
+        else:
+            self.mois_saison = None
+
+    def est_de_saison(self, mois=None):
+        """Vérifie si l'ingrédient est de saison pour un mois donné (ou le mois actuel)"""
+        if not self.mois_saison:
+            return True  # Si pas de mois défini, toujours de saison
+
+        if mois is None:
+            from datetime import datetime
+            mois = self.MOIS[datetime.now().month - 1]
+
+        return mois in self.get_mois_saison_list()
 
     def __repr__(self):
         return f'<Ingredient {self.nom}>'
