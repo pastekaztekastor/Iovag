@@ -84,10 +84,10 @@
                                 <input type="number" class="form-control" name="ingredient_quantite[]" placeholder="Quantité" step="0.1">
                             </div>
                             <div class="col-md-3">
-                                <input type="text" class="form-control" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
+                                <input type="text" class="form-control ingredient-unite" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
                             </div>
                             <div class="col-md-5">
-                                <input type="text" class="form-control" name="ingredient_nom[]" placeholder="Nom de l'ingrédient">
+                                <input type="text" class="form-control ingredient-nom" name="ingredient_nom[]" placeholder="Nom de l'ingrédient" list="ingredients-list" autocomplete="off">
                             </div>
                             <div class="col-md-1">
                                 <button type="button" class="btn btn-danger btn-sm remove-ingredient" disabled>
@@ -99,6 +99,13 @@
                     <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add-ingredient">
                         <i class="bi bi-plus-circle"></i> Ajouter un ingrédient
                     </button>
+
+                    <!-- Datalist pour l'autocomplétion des ingrédients -->
+                    <datalist id="ingredients-list">
+                        {% for ingredient in ingredients %}
+                        <option value="{{ ingredient.nom }}" data-unite="{{ ingredient.unite_mesure or '' }}">
+                        {% endfor %}
+                    </datalist>
 
                     <hr>
 
@@ -139,6 +146,28 @@
 
 {% block extra_js %}
 <script>
+// Créer un mapping des ingrédients avec leurs unités
+const ingredientsData = {
+    {% for ingredient in ingredients %}
+    "{{ ingredient.nom }}": "{{ ingredient.unite_mesure or '' }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Auto-remplir l'unité quand on sélectionne un ingrédient
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('ingredient-nom')) {
+        const nomInput = e.target;
+        const row = nomInput.closest('.ingredient-row');
+        const uniteInput = row.querySelector('.ingredient-unite');
+        const nomValue = nomInput.value;
+
+        // Si l'ingrédient existe dans la base et que l'unité n'est pas déjà remplie
+        if (ingredientsData.hasOwnProperty(nomValue) && !uniteInput.value) {
+            uniteInput.value = ingredientsData[nomValue];
+        }
+    }
+});
+
 // Gestion des ingrédients
 let ingredientCount = 1;
 document.getElementById('add-ingredient').addEventListener('click', function() {
@@ -151,10 +180,10 @@ document.getElementById('add-ingredient').addEventListener('click', function() {
             <input type="number" class="form-control" name="ingredient_quantite[]" placeholder="Quantité" step="0.1">
         </div>
         <div class="col-md-3">
-            <input type="text" class="form-control" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
+            <input type="text" class="form-control ingredient-unite" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
         </div>
         <div class="col-md-5">
-            <input type="text" class="form-control" name="ingredient_nom[]" placeholder="Nom de l'ingrédient">
+            <input type="text" class="form-control ingredient-nom" name="ingredient_nom[]" placeholder="Nom de l'ingrédient" list="ingredients-list" autocomplete="off">
         </div>
         <div class="col-md-1">
             <button type="button" class="btn btn-danger btn-sm remove-ingredient">

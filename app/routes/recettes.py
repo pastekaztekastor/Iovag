@@ -125,7 +125,9 @@ def create():
         flash('Recette créée avec succès', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
 
-    return render_template('recettes/create.html')
+    # Récupérer tous les ingrédients pour l'autocomplétion
+    ingredients = Ingredient.query.order_by(Ingredient.nom).all()
+    return render_template('recettes/create.html', ingredients=ingredients)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
