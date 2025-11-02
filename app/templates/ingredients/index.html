@@ -19,14 +19,22 @@
 
 <!-- Filtres -->
 <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <input type="text" class="form-control" id="searchIngredients" placeholder="Rechercher un ingrédient...">
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <select class="form-select" id="filterCategorie">
             <option value="">Toutes les catégories</option>
             {% for categorie in categories %}
             <option value="{{ categorie }}">{{ categorie }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" id="filterRangement">
+            <option value="">Tous les rangements</option>
+            {% for lieu in lieux_rangement %}
+            <option value="{{ lieu }}">{{ lieu }}</option>
             {% endfor %}
         </select>
     </div>
@@ -40,26 +48,39 @@
             <tr>
                 <th>Nom</th>
                 <th>Catégorie</th>
+                <th>Rangement</th>
                 <th>Unité</th>
-                <th>Conservation (jours)</th>
+                <th>Conservation</th>
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="ingredientsTableBody">
             {% for ingredient in ingredients %}
-            <tr>
+            <tr class="ingredient-row"
+                data-nom="{{ ingredient.nom|lower }}"
+                data-categorie="{{ ingredient.categorie or '' }}"
+                data-rangement="{{ ingredient.lieu_rangement or '' }}">
                 <td><strong>{{ ingredient.nom }}</strong></td>
                 <td>
                     {% if ingredient.categorie %}
                     <span class="badge bg-info">{{ ingredient.categorie }}</span>
                     {% else %}
-                    <span class="text-muted">Non définie</span>
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ingredient.lieu_rangement %}
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-geo-alt"></i> {{ ingredient.lieu_rangement }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">-</span>
                     {% endif %}
                 </td>
                 <td>{{ ingredient.unite_mesure or '-' }}</td>
                 <td>
                     {% if ingredient.duree_conservation %}
-                    {{ ingredient.duree_conservation }} jours
+                    {{ ingredient.duree_conservation }}j
                     {% else %}
                     <span class="text-muted">-</span>
                     {% endif %}
@@ -85,4 +106,55 @@
     <a href="{{ url_for('ingredients.create') }}" class="alert-link">Ajouter le premier</a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Fonction de filtrage des ingrédients
+function filterIngredients() {
+    const searchValue = document.getElementById('searchIngredients').value.toLowerCase();
+    const categorieValue = document.getElementById('filterCategorie').value;
+    const rangementValue = document.getElementById('filterRangement').value;
+
+    const rows = document.querySelectorAll('.ingredient-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const nom = row.getAttribute('data-nom');
+        const categorie = row.getAttribute('data-categorie');
+        const rangement = row.getAttribute('data-rangement');
+
+        // Vérifier chaque critère
+        const matchSearch = nom.includes(searchValue);
+        const matchCategorie = !categorieValue || categorie === categorieValue;
+        const matchRangement = !rangementValue || rangement === rangementValue;
+
+        // Afficher la ligne si tous les critères correspondent
+        if (matchSearch && matchCategorie && matchRangement) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Mettre à jour le compteur
+    const countElement = document.querySelector('.lead.text-muted');
+    if (countElement) {
+        const total = rows.length;
+        if (visibleCount === total) {
+            countElement.textContent = `${total} ingrédient(s)`;
+        } else {
+            countElement.textContent = `${visibleCount} ingrédient(s) affiché(s) sur ${total}`;
+        }
+    }
+}
+
+// Attacher les événements aux filtres
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('searchIngredients').addEventListener('keyup', filterIngredients);
+    document.getElementById('filterCategorie').addEventListener('change', filterIngredients);
+    document.getElementById('filterRangement').addEventListener('change', filterIngredients);
+});
+</script>
 {% endblock %}

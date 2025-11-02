@@ -14,7 +14,10 @@ bp = Blueprint('ingredients', __name__, url_prefix='/ingredients')
 def index():
     """Liste des ingrédients"""
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
-    return render_template('ingredients/index.html', ingredients=ingredients, categories=Ingredient.CATEGORIES)
+    return render_template('ingredients/index.html',
+                         ingredients=ingredients,
+                         categories=Ingredient.CATEGORIES,
+                         lieux_rangement=Ingredient.LIEUX_RANGEMENT)
 
 
 @bp.route('/create', methods=['GET', 'POST'])

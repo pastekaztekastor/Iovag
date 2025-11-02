@@ -49,7 +49,7 @@ class Ingredient(db.Model):
     categorie = db.Column(db.String(50), nullable=True, index=True)  # Rayon magasin: Fruits & Légumes, Viandes, etc.
     unite_mesure = db.Column(db.String(20))  # g, ml, pièce, etc.
     duree_conservation = db.Column(db.Integer)  # Durée en jours
-    #lieu_rangement = db.Column(db.String(100))  # Où est rangé l'ingrédient (frigo, placard, congélateur, etc.)
+    lieu_rangement = db.Column(db.String(100))  # Où est rangé l'ingrédient (frigo, placard, congélateur, etc.)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
