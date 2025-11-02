@@ -283,7 +283,7 @@ class ListeCourse(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(200), nullable=False)
     menu_id = db.Column(db.Integer, db.ForeignKey('menus.id'), nullable=True)
-    statut = db.Column(db.String(20), default='brouillon')  # brouillon, validee, confirmee
+    statut = db.Column(db.String(20), default='brouillon')  # brouillon, validee, en_course, terminee
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
@@ -294,8 +294,16 @@ class ListeCourse(db.Model):
         """Marquer la liste comme validée (prête pour les courses)"""
         self.statut = 'validee'
 
+    def commencer_courses(self):
+        """Commencer les courses (passage en magasin)"""
+        self.statut = 'en_course'
+        # Initialiser quantite_achetee avec quantite pour chaque item
+        for item in self.ingredients.all():
+            if item.quantite_achetee is None:
+                item.quantite_achetee = item.quantite
+
     def confirmer(self):
-        """Confirmer l'achat et mettre à jour le stock"""
+        """Confirmer l'achat et mettre à jour le stock avec les quantités ACHETÉES"""
         from app.models import Stock
         for item in self.ingredients.all():
             if item.achete:
@@ -307,21 +315,24 @@ class ListeCourse(db.Model):
                         ingredient_id=ingredient.id
                     ).first()
 
+                    # Utiliser quantite_achetee si disponible, sinon quantite
+                    quantite_a_ajouter = item.quantite_achetee if item.quantite_achetee is not None else item.quantite
+
                     if stock_item:
                         # Ajouter à la quantité existante
-                        stock_item.quantite += item.quantite
+                        stock_item.quantite += quantite_a_ajouter
                         stock_item.unite = item.unite
                     else:
                         # Créer un nouveau stock
                         stock_item = Stock(
                             user_id=self.created_by,
                             ingredient_id=ingredient.id,
-                            quantite=item.quantite,
+                            quantite=quantite_a_ajouter,
                             unite=item.unite
                         )
                         db.session.add(stock_item)
 
-        self.statut = 'confirmee'
+        self.statut = 'terminee'
 
     def __repr__(self):
         return f'<ListeCourse {self.nom}>'
@@ -334,7 +345,8 @@ class ListeCourseItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     liste_id = db.Column(db.Integer, db.ForeignKey('liste_courses.id'), nullable=False)
     nom_ingredient = db.Column(db.String(100), nullable=False)
-    quantite = db.Column(db.Float, nullable=False)
+    quantite = db.Column(db.Float, nullable=False)  # Quantité nécessaire (de la recette)
+    quantite_achetee = db.Column(db.Float, nullable=True)  # Quantité réellement achetée
     unite = db.Column(db.String(20))
     rayon = db.Column(db.String(50))  # Pour organiser la liste par rayon
     achete = db.Column(db.Boolean, default=False)

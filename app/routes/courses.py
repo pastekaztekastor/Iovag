@@ -45,6 +45,31 @@ def toggle_ingredient(id):
     return jsonify({'success': True})
 
 
+@bp.route('/<int:id>/update-quantite', methods=['POST'])
+@login_required
+def update_quantite(id):
+    """Mettre à jour la quantité achetée d'un ingrédient (AJAX)"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    item_id = data.get('item_id')
+    quantite_achetee = data.get('quantite_achetee')
+
+    item = ListeCourseItem.query.get_or_404(item_id)
+    if item.liste_id != liste.id:
+        return jsonify({'success': False, 'error': 'Item not in list'}), 403
+
+    try:
+        item.quantite_achetee = float(quantite_achetee)
+        db.session.commit()
+        return jsonify({'success': True, 'quantite_achetee': item.quantite_achetee})
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'error': 'Invalid quantity'}), 400
+
+
 @bp.route('/<int:id>/delete', methods=['POST'])
 @login_required
 def delete(id):
@@ -76,6 +101,26 @@ def valider(id):
     return redirect(url_for('courses.detail', id=id))
 
 
+@bp.route('/<int:id>/commencer', methods=['POST'])
+@login_required
+def commencer(id):
+    """Commencer les courses (passage en magasin)"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de modifier cette liste', 'danger')
+        return redirect(url_for('courses.index'))
+
+    if liste.statut != 'validee':
+        flash('La liste doit être validée avant de commencer les courses', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    liste.commencer_courses()
+    db.session.commit()
+    flash('Bonnes courses! Vous pouvez maintenant ajuster les quantités achetées.', 'success')
+    return redirect(url_for('courses.detail', id=id))
+
+
 @bp.route('/<int:id>/confirmer', methods=['POST'])
 @login_required
 def confirmer(id):
@@ -90,13 +135,17 @@ def confirmer(id):
         flash('Vous devez d\'abord valider la liste avant de la confirmer', 'warning')
         return redirect(url_for('courses.detail', id=id))
 
-    if liste.statut == 'confirmee':
-        flash('Cette liste a déjà été confirmée', 'warning')
+    if liste.statut == 'validee':
+        flash('Vous devez d\'abord commencer les courses', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    if liste.statut == 'terminee':
+        flash('Cette liste a déjà été terminée', 'warning')
         return redirect(url_for('courses.detail', id=id))
 
     liste.confirmer()
     db.session.commit()
-    flash('Achats confirmés! Le stock a été mis à jour.', 'success')
+    flash('Achats confirmés! Le stock a été mis à jour avec les quantités achetées.', 'success')
     return redirect(url_for('courses.detail', id=id))
 
 

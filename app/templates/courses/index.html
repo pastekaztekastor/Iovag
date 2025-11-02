@@ -33,7 +33,18 @@
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card h-100 shadow-sm">
             <div class="card-body">
-                <h5 class="card-title">{{ liste.nom }}</h5>
+                <h5 class="card-title">
+                    {{ liste.nom }}
+                    {% if liste.statut == 'brouillon' %}
+                    <span class="badge bg-secondary">Brouillon</span>
+                    {% elif liste.statut == 'validee' %}
+                    <span class="badge bg-primary">Validée</span>
+                    {% elif liste.statut == 'en_course' %}
+                    <span class="badge bg-warning text-dark">En cours</span>
+                    {% elif liste.statut == 'terminee' %}
+                    <span class="badge bg-success">Terminée</span>
+                    {% endif %}
+                </h5>
 
                 <p class="card-text text-muted">
                     <i class="bi bi-calendar3"></i> {{ liste.created_at.strftime('%d/%m/%Y') }}<br>

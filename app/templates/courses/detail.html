@@ -24,8 +24,10 @@
                     <span class="badge bg-secondary">Brouillon</span>
                     {% elif liste.statut == 'validee' %}
                     <span class="badge bg-primary">Validée</span>
-                    {% elif liste.statut == 'confirmee' %}
-                    <span class="badge bg-success">Confirmée</span>
+                    {% elif liste.statut == 'en_course' %}
+                    <span class="badge bg-warning text-dark">En cours</span>
+                    {% elif liste.statut == 'terminee' %}
+                    <span class="badge bg-success">Terminée</span>
                     {% endif %}
                 </h1>
 
@@ -36,6 +38,7 @@
                 </p>
                 {% endif %}
 
+                <!-- Progression -->
                 {% set nb_ingredients = liste.ingredients.count() %}
                 {% set nb_achetes = liste.ingredients.filter_by(achete=True).count() %}
 
@@ -50,29 +53,88 @@
                     </div>
                 </div>
 
+                <!-- Phase BROUILLON : Explication du workflow -->
+                {% if liste.statut == 'brouillon' %}
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Phase de vérification</h6>
+                    <p class="mb-0">Vérifiez les quantités nécessaires en comparant avec votre stock. Vous pourrez ajuster les quantités achetées dans le magasin.</p>
+                </div>
+                {% endif %}
+
+                <!-- Phase EN_COURSE : Explication -->
+                {% if liste.statut == 'en_course' %}
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-cart-fill"></i> En cours de courses</h6>
+                    <p class="mb-0">Saisissez les quantités réellement achetées. Si un article indique "3 œufs" mais que vous achetez une boîte de 6, mettez 6.</p>
+                </div>
+                {% endif %}
+
                 <!-- Liste des ingrédients -->
-                <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Articles à acheter</h2>
+                <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Articles</h2>
 
                 {% if liste.ingredients.count() > 0 %}
                 <form id="updateForm">
                     <ul class="list-group">
                         {% for item in liste.ingredients.all() %}
                         <li class="list-group-item">
-                            <div class="form-check">
-                                <input class="form-check-input ingredient-checkbox"
-                                       type="checkbox"
-                                       value="{{ item.id }}"
-                                       id="ingredient_{{ item.id }}"
-                                       {% if item.achete %}checked{% endif %}
-                                       onchange="toggleIngredient({{ item.id }}, this.checked)">
-                                <label class="form-check-label w-100 {% if item.achete %}text-decoration-line-through text-muted{% endif %}"
-                                       for="ingredient_{{ item.id }}"
-                                       id="label_{{ item.id }}">
-                                    <strong>{{ item.quantite }} {{ item.unite }}</strong> {{ item.nom_ingredient }}
-                                    {% if item.rayon %}
-                                    <span class="badge bg-secondary">{{ item.rayon }}</span>
-                                    {% endif %}
-                                </label>
+                            <div class="row align-items-center">
+                                <!-- Checkbox -->
+                                <div class="col-auto">
+                                    <div class="form-check">
+                                        <input class="form-check-input ingredient-checkbox"
+                                               type="checkbox"
+                                               value="{{ item.id }}"
+                                               id="ingredient_{{ item.id }}"
+                                               {% if item.achete %}checked{% endif %}
+                                               {% if liste.statut not in ['en_course', 'validee'] %}disabled{% endif %}
+                                               onchange="toggleIngredient({{ item.id }}, this.checked)">
+                                    </div>
+                                </div>
+
+                                <!-- Nom et quantités -->
+                                <div class="col">
+                                    <label class="form-check-label w-100 {% if item.achete %}text-decoration-line-through text-muted{% endif %}"
+                                           for="ingredient_{{ item.id }}"
+                                           id="label_{{ item.id }}">
+
+                                        <!-- Nom de l'ingrédient -->
+                                        <strong>{{ item.nom_ingredient }}</strong>
+
+                                        <!-- Rayon -->
+                                        {% if item.rayon %}
+                                        <span class="badge bg-secondary ms-2">{{ item.rayon }}</span>
+                                        {% endif %}
+
+                                        <br>
+
+                                        <!-- Quantité nécessaire (toujours affichée) -->
+                                        <small class="text-muted">
+                                            Nécessaire : {{ item.quantite }} {{ item.unite }}
+                                        </small>
+
+                                        <!-- Phase EN_COURSE : Quantité achetée éditable -->
+                                        {% if liste.statut == 'en_course' %}
+                                        <br>
+                                        <div class="input-group input-group-sm mt-2" style="max-width: 300px;">
+                                            <span class="input-group-text">Achetée :</span>
+                                            <input type="number"
+                                                   class="form-control"
+                                                   id="qte_{{ item.id }}"
+                                                   value="{{ item.quantite_achetee if item.quantite_achetee is not none else item.quantite }}"
+                                                   step="0.1"
+                                                   min="0"
+                                                   onchange="updateQuantite({{ item.id }}, this.value)">
+                                            <span class="input-group-text">{{ item.unite }}</span>
+                                        </div>
+                                        {% elif liste.statut == 'terminee' and item.quantite_achetee is not none %}
+                                        <br>
+                                        <small class="text-success">
+                                            <i class="bi bi-check-circle"></i> Acheté : {{ item.quantite_achetee }} {{ item.unite }}
+                                        </small>
+                                        {% endif %}
+
+                                    </label>
+                                </div>
                             </div>
                         </li>
                         {% endfor %}
@@ -96,17 +158,27 @@
                             <i class="bi bi-check-circle"></i> Valider la liste
                         </button>
                     </form>
-                    <small class="text-muted">Validez la liste quand elle est prête pour les courses</small>
+                    <small class="text-muted">Validez quand la liste est prête</small>
+
                     {% elif liste.statut == 'validee' %}
-                    <form method="POST" action="{{ url_for('courses.confirmer', id=liste.id) }}">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-check2-all"></i> Confirmer les achats
+                    <form method="POST" action="{{ url_for('courses.commencer', id=liste.id) }}">
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="bi bi-cart-fill"></i> Commencer les courses
                         </button>
                     </form>
-                    <small class="text-muted">Confirmez pour mettre à jour votre stock</small>
-                    {% elif liste.statut == 'confirmee' %}
+                    <small class="text-muted">Démarrez quand vous êtes au magasin</small>
+
+                    {% elif liste.statut == 'en_course' %}
+                    <form method="POST" action="{{ url_for('courses.confirmer', id=liste.id) }}">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check2-all"></i> Terminer les courses
+                        </button>
+                    </form>
+                    <small class="text-muted">Confirmez pour mettre à jour le stock</small>
+
+                    {% elif liste.statut == 'terminee' %}
                     <div class="alert alert-success mb-0">
-                        <i class="bi bi-check-circle-fill"></i> Achats confirmés<br>
+                        <i class="bi bi-check-circle-fill"></i> Courses terminées<br>
                         <small>Le stock a été mis à jour</small>
                     </div>
                     {% endif %}
@@ -122,7 +194,7 @@
                     </a>
                     {% endif %}
 
-                    {% if liste.statut != 'confirmee' %}
+                    {% if liste.statut != 'terminee' %}
                     <form method="POST" action="{{ url_for('courses.delete', id=liste.id) }}" onsubmit="return confirmDelete('Êtes-vous sûr de vouloir supprimer cette liste ?');">
                         <button type="submit" class="btn btn-outline-danger w-100">
                             <i class="bi bi-trash"></i> Supprimer
@@ -146,6 +218,23 @@
                         Créée le {{ liste.created_at.strftime('%d/%m/%Y à %H:%M') }}
                     </small>
                 </p>
+
+                <!-- Workflow expliqué -->
+                <h6 class="mt-3">Workflow :</h6>
+                <ol class="small">
+                    <li class="{% if liste.statut == 'brouillon' %}text-primary fw-bold{% elif liste.statut in ['validee', 'en_course', 'terminee'] %}text-success{% endif %}">
+                        Brouillon - Vérification
+                    </li>
+                    <li class="{% if liste.statut == 'validee' %}text-primary fw-bold{% elif liste.statut in ['en_course', 'terminee'] %}text-success{% endif %}">
+                        Validée - Prête
+                    </li>
+                    <li class="{% if liste.statut == 'en_course' %}text-warning fw-bold{% elif liste.statut == 'terminee' %}text-success{% endif %}">
+                        En cours - Au magasin
+                    </li>
+                    <li class="{% if liste.statut == 'terminee' %}text-success fw-bold{% endif %}">
+                        Terminée - Stock mis à jour
+                    </li>
+                </ol>
             </div>
         </div>
     </div>
@@ -190,6 +279,36 @@ function toggleIngredient(itemId, checked) {
         } else {
             label.classList.remove('text-decoration-line-through', 'text-muted');
         }
+    });
+}
+
+function updateQuantite(itemId, quantite) {
+    fetch('{{ url_for("courses.update_quantite", id=liste.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            item_id: itemId,
+            quantite_achetee: quantite
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Visual feedback
+            const input = document.getElementById('qte_' + itemId);
+            input.classList.add('border-success');
+            setTimeout(() => {
+                input.classList.remove('border-success');
+            }, 1000);
+        } else {
+            alert('Erreur lors de la mise à jour de la quantité');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la mise à jour de la quantité');
     });
 }
 </script>
