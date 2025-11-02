@@ -26,17 +26,21 @@ def create():
         categorie = request.form.get('categorie')
         unite_mesure = request.form.get('unite_mesure')
         duree_conservation = request.form.get('duree_conservation', type=int)
+        lieu_rangement = request.form.get('lieu_rangement')
 
         # Vérifier si l'ingrédient existe déjà
         if Ingredient.query.filter_by(nom=nom).first():
             flash('Un ingrédient avec ce nom existe déjà', 'danger')
-            return render_template('ingredients/create.html', categories=Ingredient.CATEGORIES)
+            return render_template('ingredients/create.html',
+                                 categories=Ingredient.CATEGORIES,
+                                 lieux_rangement=Ingredient.LIEUX_RANGEMENT)
 
         ingredient = Ingredient(
             nom=nom,
             categorie=categorie if categorie else None,
             unite_mesure=unite_mesure if unite_mesure else None,
-            duree_conservation=duree_conservation if duree_conservation else None
+            duree_conservation=duree_conservation if duree_conservation else None,
+            lieu_rangement=lieu_rangement if lieu_rangement else None
         )
         db.session.add(ingredient)
         db.session.commit()
@@ -44,7 +48,9 @@ def create():
         flash('Ingrédient créé avec succès', 'success')
         return redirect(url_for('ingredients.index'))
 
-    return render_template('ingredients/create.html', categories=Ingredient.CATEGORIES)
+    return render_template('ingredients/create.html',
+                         categories=Ingredient.CATEGORIES,
+                         lieux_rangement=Ingredient.LIEUX_RANGEMENT)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -58,12 +64,16 @@ def edit(id):
         ingredient.categorie = request.form.get('categorie') or None
         ingredient.unite_mesure = request.form.get('unite_mesure') or None
         ingredient.duree_conservation = request.form.get('duree_conservation', type=int) or None
+        ingredient.lieu_rangement = request.form.get('lieu_rangement') or None
 
         db.session.commit()
         flash('Ingrédient modifié avec succès', 'success')
         return redirect(url_for('ingredients.index'))
 
-    return render_template('ingredients/edit.html', ingredient=ingredient, categories=Ingredient.CATEGORIES)
+    return render_template('ingredients/edit.html',
+                         ingredient=ingredient,
+                         categories=Ingredient.CATEGORIES,
+                         lieux_rangement=Ingredient.LIEUX_RANGEMENT)
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])

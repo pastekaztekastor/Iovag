@@ -56,6 +56,50 @@ def delete(id):
     return redirect(url_for('courses.index'))
 
 
+@bp.route('/<int:id>/valider', methods=['POST'])
+@login_required
+def valider(id):
+    """Valider la liste de courses (prête pour les courses)"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de modifier cette liste', 'danger')
+        return redirect(url_for('courses.index'))
+
+    if liste.statut == 'confirmee':
+        flash('Cette liste a déjà été confirmée', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    liste.valider()
+    db.session.commit()
+    flash('Liste de courses validée et prête pour les courses!', 'success')
+    return redirect(url_for('courses.detail', id=id))
+
+
+@bp.route('/<int:id>/confirmer', methods=['POST'])
+@login_required
+def confirmer(id):
+    """Confirmer l'achat et mettre à jour le stock"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de modifier cette liste', 'danger')
+        return redirect(url_for('courses.index'))
+
+    if liste.statut == 'brouillon':
+        flash('Vous devez d\'abord valider la liste avant de la confirmer', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    if liste.statut == 'confirmee':
+        flash('Cette liste a déjà été confirmée', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    liste.confirmer()
+    db.session.commit()
+    flash('Achats confirmés! Le stock a été mis à jour.', 'success')
+    return redirect(url_for('courses.detail', id=id))
+
+
 @bp.route('/<int:id>/export-pdf')
 @login_required
 def export_pdf(id):

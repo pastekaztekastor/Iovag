@@ -45,13 +45,24 @@
                         <div class="form-text">Unité par défaut pour cet ingrédient</div>
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <label for="duree_conservation" class="form-label">Durée de conservation</label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="duree_conservation" name="duree_conservation" min="1" value="{{ ingredient.duree_conservation or '' }}" placeholder="7">
                             <span class="input-group-text">jours</span>
                         </div>
                         <div class="form-text">Durée moyenne de conservation en jours</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="lieu_rangement" class="form-label">Lieu de rangement</label>
+                        <select class="form-select" id="lieu_rangement" name="lieu_rangement">
+                            <option value="">-- Sélectionner un lieu --</option>
+                            {% for lieu in lieux_rangement %}
+                            <option value="{{ lieu }}" {% if ingredient.lieu_rangement == lieu %}selected{% endif %}>{{ lieu }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Où est rangé cet ingrédient (frigo, placard, etc.)</div>
                     </div>
 
                     <hr>

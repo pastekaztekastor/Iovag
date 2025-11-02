@@ -20,6 +20,13 @@
             <div class="card-body">
                 <h1 class="card-title">
                     <i class="bi bi-cart"></i> {{ liste.nom }}
+                    {% if liste.statut == 'brouillon' %}
+                    <span class="badge bg-secondary">Brouillon</span>
+                    {% elif liste.statut == 'validee' %}
+                    <span class="badge bg-primary">Validée</span>
+                    {% elif liste.statut == 'confirmee' %}
+                    <span class="badge bg-success">Confirmée</span>
+                    {% endif %}
                 </h1>
 
                 {% if liste.menu %}
@@ -83,7 +90,30 @@
             <div class="card-body">
                 <h5 class="card-title">Actions</h5>
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('courses.export_pdf', id=liste.id) }}" class="btn btn-success">
+                    {% if liste.statut == 'brouillon' %}
+                    <form method="POST" action="{{ url_for('courses.valider', id=liste.id) }}">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-circle"></i> Valider la liste
+                        </button>
+                    </form>
+                    <small class="text-muted">Validez la liste quand elle est prête pour les courses</small>
+                    {% elif liste.statut == 'validee' %}
+                    <form method="POST" action="{{ url_for('courses.confirmer', id=liste.id) }}">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check2-all"></i> Confirmer les achats
+                        </button>
+                    </form>
+                    <small class="text-muted">Confirmez pour mettre à jour votre stock</small>
+                    {% elif liste.statut == 'confirmee' %}
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle-fill"></i> Achats confirmés<br>
+                        <small>Le stock a été mis à jour</small>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <a href="{{ url_for('courses.export_pdf', id=liste.id) }}" class="btn btn-outline-success">
                         <i class="bi bi-file-pdf"></i> Exporter en PDF
                     </a>
                     {% if liste.menu %}
@@ -91,11 +121,15 @@
                         <i class="bi bi-calendar-week"></i> Voir le menu
                     </a>
                     {% endif %}
+
+                    {% if liste.statut != 'confirmee' %}
                     <form method="POST" action="{{ url_for('courses.delete', id=liste.id) }}" onsubmit="return confirmDelete('Êtes-vous sûr de vouloir supprimer cette liste ?');">
                         <button type="submit" class="btn btn-outline-danger w-100">
                             <i class="bi bi-trash"></i> Supprimer
                         </button>
                     </form>
+                    {% endif %}
+
                     <hr>
                     <a href="{{ url_for('courses.index') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> Retour aux listes

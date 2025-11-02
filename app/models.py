@@ -49,6 +49,7 @@ class Ingredient(db.Model):
     categorie = db.Column(db.String(50), nullable=True, index=True)  # Rayon magasin: Fruits & Légumes, Viandes, etc.
     unite_mesure = db.Column(db.String(20))  # g, ml, pièce, etc.
     duree_conservation = db.Column(db.Integer)  # Durée en jours
+    #lieu_rangement = db.Column(db.String(100))  # Où est rangé l'ingrédient (frigo, placard, congélateur, etc.)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
@@ -70,6 +71,21 @@ class Ingredient(db.Model):
         'Conserves',
         'Pâtes & Riz',
         'Huiles & Vinaigres',
+        'Autre'
+    ]
+
+    # Lieux de rangement prédéfinis
+    LIEUX_RANGEMENT = [
+        'Frigo (haut)',
+        'Frigo (milieu)',
+        'Frigo (bas)',
+        'Frigo (bac à légumes)',
+        'Frigo (porte)',
+        'Congélateur',
+        'Placard sec',
+        'Placard épices',
+        'Corbeille à fruits',
+        'Cave',
         'Autre'
     ]
 
@@ -200,16 +216,31 @@ class Menu(db.Model):
         db.session.add(liste)
         db.session.flush()  # Pour obtenir l'ID
 
-        # Créer les items
+        # Créer les items en vérifiant le stock
         for data in ingredients_totaux.values():
-            item = ListeCourseItem(
-                liste_id=liste.id,
-                nom_ingredient=data['ingredient'].nom,
-                quantite=data['quantite'],
-                unite=data['unite'],
-                achete=False
-            )
-            db.session.add(item)
+            quantite_necessaire = data['quantite']
+
+            # Vérifier le stock pour cet ingrédient
+            stock_item = Stock.query.filter_by(
+                user_id=self.created_by,
+                ingredient_id=data['ingredient'].id
+            ).first()
+
+            if stock_item and stock_item.unite == data['unite']:
+                # Si on a du stock avec la même unité, déduire la quantité
+                quantite_necessaire -= stock_item.quantite
+
+            # N'ajouter l'item que s'il reste une quantité à acheter
+            if quantite_necessaire > 0:
+                item = ListeCourseItem(
+                    liste_id=liste.id,
+                    nom_ingredient=data['ingredient'].nom,
+                    quantite=quantite_necessaire,
+                    unite=data['unite'],
+                    rayon=data['ingredient'].categorie,
+                    achete=False
+                )
+                db.session.add(item)
 
         return liste
 
@@ -252,11 +283,45 @@ class ListeCourse(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(200), nullable=False)
     menu_id = db.Column(db.Integer, db.ForeignKey('menus.id'), nullable=True)
+    statut = db.Column(db.String(20), default='brouillon')  # brouillon, validee, confirmee
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     # Relations
     ingredients = db.relationship('ListeCourseItem', backref='liste', lazy='dynamic', cascade='all, delete-orphan')
+
+    def valider(self):
+        """Marquer la liste comme validée (prête pour les courses)"""
+        self.statut = 'validee'
+
+    def confirmer(self):
+        """Confirmer l'achat et mettre à jour le stock"""
+        from app.models import Stock
+        for item in self.ingredients.all():
+            if item.achete:
+                # Chercher si l'ingrédient existe dans le stock
+                ingredient = Ingredient.query.filter_by(nom=item.nom_ingredient).first()
+                if ingredient:
+                    stock_item = Stock.query.filter_by(
+                        user_id=self.created_by,
+                        ingredient_id=ingredient.id
+                    ).first()
+
+                    if stock_item:
+                        # Ajouter à la quantité existante
+                        stock_item.quantite += item.quantite
+                        stock_item.unite = item.unite
+                    else:
+                        # Créer un nouveau stock
+                        stock_item = Stock(
+                            user_id=self.created_by,
+                            ingredient_id=ingredient.id,
+                            quantite=item.quantite,
+                            unite=item.unite
+                        )
+                        db.session.add(stock_item)
+
+        self.statut = 'confirmee'
 
     def __repr__(self):
         return f'<ListeCourse {self.nom}>'
