@@ -112,6 +112,7 @@
             <div class="card-body">
                 <h5 class="card-title">Actions</h5>
                 <div class="d-grid gap-2">
+                    {% if recette.created_by == current_user.id %}
                     <a href="{{ url_for('recettes.edit', id=recette.id) }}" class="btn btn-outline-primary">
                         <i class="bi bi-pencil"></i> Modifier
                     </a>
@@ -121,6 +122,7 @@
                         </button>
                     </form>
                     <hr>
+                    {% endif %}
                     <a href="{{ url_for('recettes.index') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> Retour aux recettes
                     </a>

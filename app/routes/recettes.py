@@ -136,6 +136,11 @@ def edit(id):
     """Modifier une recette"""
     recette = Recette.query.get_or_404(id)
 
+    # Vérifier que l'utilisateur est l'auteur
+    if recette.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de modifier cette recette', 'danger')
+        return redirect(url_for('recettes.detail', id=id))
+
     if request.method == 'POST':
         # Mettre à jour les informations générales
         recette.nom = request.form.get('nom')
@@ -162,11 +167,59 @@ def edit(id):
                 file.save(filepath)
                 recette.photo_url = f"/static/uploads/recettes/{filename}"
 
+        # Supprimer les ingrédients existants
+        RecetteIngredient.query.filter_by(recette_id=recette.id).delete()
+
+        # Ajouter les nouveaux ingrédients
+        quantites = request.form.getlist('ingredient_quantite[]')
+        unites = request.form.getlist('ingredient_unite[]')
+        noms = request.form.getlist('ingredient_nom[]')
+
+        for i, nom_ingredient in enumerate(noms):
+            if nom_ingredient.strip():  # Ignorer les lignes vides
+                # Chercher ou créer l'ingrédient
+                ingredient = Ingredient.query.filter_by(nom=nom_ingredient.strip()).first()
+                if not ingredient:
+                    ingredient = Ingredient(nom=nom_ingredient.strip())
+                    db.session.add(ingredient)
+                    db.session.flush()
+
+                # Créer le lien recette-ingrédient
+                try:
+                    quantite = float(quantites[i]) if i < len(quantites) and quantites[i].strip() else 0
+                except (ValueError, AttributeError):
+                    quantite = 0
+                unite = unites[i].strip() if i < len(unites) and unites[i] else ''
+
+                recette_ingredient = RecetteIngredient(
+                    recette_id=recette.id,
+                    ingredient_id=ingredient.id,
+                    quantite=quantite,
+                    unite=unite
+                )
+                db.session.add(recette_ingredient)
+
+        # Supprimer les instructions existantes
+        Instruction.query.filter_by(recette_id=recette.id).delete()
+
+        # Ajouter les nouvelles instructions
+        instructions_textes = request.form.getlist('instruction[]')
+        for ordre, texte in enumerate(instructions_textes, start=1):
+            if texte.strip():  # Ignorer les lignes vides
+                instruction = Instruction(
+                    recette_id=recette.id,
+                    ordre=ordre,
+                    texte=texte.strip()
+                )
+                db.session.add(instruction)
+
         db.session.commit()
         flash('Recette modifiée avec succès', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
 
-    return render_template('recettes/edit.html', recette=recette)
+    # Récupérer tous les ingrédients pour l'autocomplétion
+    ingredients = Ingredient.query.order_by(Ingredient.nom).all()
+    return render_template('recettes/edit.html', recette=recette, ingredients=ingredients)
 
 
 @bp.route('/<int:id>/delete', methods=['POST'])
@@ -174,6 +227,12 @@ def edit(id):
 def delete(id):
     """Supprimer une recette"""
     recette = Recette.query.get_or_404(id)
+
+    # Vérifier que l'utilisateur est l'auteur
+    if recette.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de supprimer cette recette', 'danger')
+        return redirect(url_for('recettes.detail', id=id))
+
     db.session.delete(recette)
     db.session.commit()
     flash('Recette supprimée avec succès', 'success')

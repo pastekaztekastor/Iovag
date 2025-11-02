@@ -86,9 +86,88 @@
 
                     <hr>
 
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> <strong>Note :</strong> La modification des ingrédients et instructions sera disponible prochainement. Pour le moment, seules les informations générales peuvent être modifiées.
+                    <!-- Ingrédients -->
+                    <h4 class="mb-3">Ingrédients</h4>
+                    <div id="ingredients-container">
+                        {% for ri in recette.ingredients.all() %}
+                        <div class="row mb-2 ingredient-row">
+                            <div class="col-md-3">
+                                <input type="number" class="form-control" name="ingredient_quantite[]" placeholder="Quantité" step="0.1" value="{{ ri.quantite }}">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control ingredient-unite" name="ingredient_unite[]" placeholder="Unité (g, ml...)" value="{{ ri.unite }}">
+                            </div>
+                            <div class="col-md-5">
+                                <input type="text" class="form-control ingredient-nom" name="ingredient_nom[]" placeholder="Nom de l'ingrédient" list="ingredients-list" autocomplete="off" value="{{ ri.ingredient.nom }}">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-danger btn-sm remove-ingredient">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if recette.ingredients.count() == 0 %}
+                        <div class="row mb-2 ingredient-row">
+                            <div class="col-md-3">
+                                <input type="number" class="form-control" name="ingredient_quantite[]" placeholder="Quantité" step="0.1">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" class="form-control ingredient-unite" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
+                            </div>
+                            <div class="col-md-5">
+                                <input type="text" class="form-control ingredient-nom" name="ingredient_nom[]" placeholder="Nom de l'ingrédient" list="ingredients-list" autocomplete="off">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-danger btn-sm remove-ingredient" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add-ingredient">
+                        <i class="bi bi-plus-circle"></i> Ajouter un ingrédient
+                    </button>
+
+                    <!-- Datalist pour l'autocomplétion des ingrédients -->
+                    <datalist id="ingredients-list">
+                        {% for ingredient in ingredients %}
+                        <option value="{{ ingredient.nom }}" data-unite="{{ ingredient.unite_mesure or '' }}">
+                        {% endfor %}
+                    </datalist>
+
+                    <hr>
+
+                    <!-- Instructions -->
+                    <h4 class="mb-3">Instructions</h4>
+                    <div id="instructions-container">
+                        {% for instruction in recette.instructions.all() %}
+                        <div class="mb-2 instruction-row">
+                            <div class="input-group">
+                                <span class="input-group-text">{{ loop.index }}.</span>
+                                <textarea class="form-control" name="instruction[]" rows="2" placeholder="Étape de préparation">{{ instruction.texte }}</textarea>
+                                <button type="button" class="btn btn-danger remove-instruction">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if recette.instructions.count() == 0 %}
+                        <div class="mb-2 instruction-row">
+                            <div class="input-group">
+                                <span class="input-group-text">1.</span>
+                                <textarea class="form-control" name="instruction[]" rows="2" placeholder="Étape de préparation"></textarea>
+                                <button type="button" class="btn btn-danger remove-instruction" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add-instruction">
+                        <i class="bi bi-plus-circle"></i> Ajouter une étape
+                    </button>
 
                     <hr>
 
@@ -106,4 +185,113 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Créer un mapping des ingrédients avec leurs unités
+const ingredientsData = {
+    {% for ingredient in ingredients %}
+    "{{ ingredient.nom }}": "{{ ingredient.unite_mesure or '' }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Auto-remplir l'unité quand on sélectionne un ingrédient
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('ingredient-nom')) {
+        const nomInput = e.target;
+        const row = nomInput.closest('.ingredient-row');
+        const uniteInput = row.querySelector('.ingredient-unite');
+        const nomValue = nomInput.value;
+
+        // Si l'ingrédient existe dans la base et que l'unité n'est pas déjà remplie
+        if (ingredientsData.hasOwnProperty(nomValue) && !uniteInput.value) {
+            uniteInput.value = ingredientsData[nomValue];
+        }
+    }
+});
+
+// Gestion des ingrédients
+let ingredientCount = {{ recette.ingredients.count() if recette.ingredients.count() > 0 else 1 }};
+document.getElementById('add-ingredient').addEventListener('click', function() {
+    ingredientCount++;
+    const container = document.getElementById('ingredients-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-2 ingredient-row';
+    newRow.innerHTML = `
+        <div class="col-md-3">
+            <input type="number" class="form-control" name="ingredient_quantite[]" placeholder="Quantité" step="0.1">
+        </div>
+        <div class="col-md-3">
+            <input type="text" class="form-control ingredient-unite" name="ingredient_unite[]" placeholder="Unité (g, ml...)">
+        </div>
+        <div class="col-md-5">
+            <input type="text" class="form-control ingredient-nom" name="ingredient_nom[]" placeholder="Nom de l'ingrédient" list="ingredients-list" autocomplete="off">
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-danger btn-sm remove-ingredient">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    updateRemoveButtons();
+});
+
+// Gestion des instructions
+let instructionCount = {{ recette.instructions.count() if recette.instructions.count() > 0 else 1 }};
+document.getElementById('add-instruction').addEventListener('click', function() {
+    instructionCount++;
+    const container = document.getElementById('instructions-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'mb-2 instruction-row';
+    newRow.innerHTML = `
+        <div class="input-group">
+            <span class="input-group-text">${instructionCount}.</span>
+            <textarea class="form-control" name="instruction[]" rows="2" placeholder="Étape de préparation"></textarea>
+            <button type="button" class="btn btn-danger remove-instruction">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    updateRemoveButtons();
+});
+
+// Gérer la suppression des lignes
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-ingredient')) {
+        e.target.closest('.ingredient-row').remove();
+        updateRemoveButtons();
+    }
+    if (e.target.closest('.remove-instruction')) {
+        e.target.closest('.instruction-row').remove();
+        updateInstructionNumbers();
+        updateRemoveButtons();
+    }
+});
+
+function updateRemoveButtons() {
+    const ingredientRows = document.querySelectorAll('.ingredient-row');
+    const instructionRows = document.querySelectorAll('.instruction-row');
+
+    ingredientRows.forEach((row, index) => {
+        const btn = row.querySelector('.remove-ingredient');
+        btn.disabled = ingredientRows.length === 1;
+    });
+
+    instructionRows.forEach((row, index) => {
+        const btn = row.querySelector('.remove-instruction');
+        btn.disabled = instructionRows.length === 1;
+    });
+}
+
+function updateInstructionNumbers() {
+    const instructionRows = document.querySelectorAll('.instruction-row');
+    instructionRows.forEach((row, index) => {
+        row.querySelector('.input-group-text').textContent = (index + 1) + '.';
+    });
+    instructionCount = instructionRows.length;
+}
+</script>
 {% endblock %}
