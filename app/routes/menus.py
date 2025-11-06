@@ -78,7 +78,11 @@ def create():
     # GET: Récupérer toutes les recettes de l'utilisateur pour les dropdowns
     recettes = Recette.query.filter_by(created_by=current_user.id)\
         .order_by(Recette.nom).all()
-    return render_template('menus/create.html', recettes=recettes)
+
+    # Date du jour au format ISO (YYYY-MM-DD)
+    today = datetime.now().date().isoformat()
+
+    return render_template('menus/create.html', recettes=recettes, today=today)
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

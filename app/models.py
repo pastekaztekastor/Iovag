@@ -7,6 +7,105 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, login_manager
 
 
+class UnitConverter:
+    """Convertisseur d'unités pour normaliser les quantités d'ingrédients"""
+
+    # Table de conversion : unité -> (unité_base, facteur_multiplication)
+    CONVERSIONS = {
+        # Masse
+        'kg': ('g', 1000),
+        'g': ('g', 1),
+        'mg': ('g', 0.001),
+
+        # Volume
+        'l': ('ml', 1000),
+        'ml': ('ml', 1),
+        'cl': ('ml', 10),
+        'dl': ('ml', 100),
+
+        # Unités sans conversion directe (dépendent de l'ingrédient)
+        'pièce': ('pièce', 1),
+        'gousse': ('gousse', 1),
+        'feuille': ('feuille', 1),
+        'sachet': ('sachet', 1),
+        'botte': ('botte', 1),
+        'tranche': ('tranche', 1),
+    }
+
+    @classmethod
+    def normaliser(cls, quantite, unite, ingredient=None):
+        """
+        Convertit une quantité dans son unité de base
+        Pour les fruits & légumes avec poids estimé, convertit pièce → g
+
+        Args:
+            quantite: La quantité à convertir
+            unite: L'unité actuelle
+            ingredient: Objet Ingredient (optionnel, pour conversion pièce ↔ g)
+
+        Returns:
+            tuple (quantite_normalisee, unite_base)
+        """
+        if not unite:
+            return quantite, None
+
+        unite_lower = unite.lower()
+
+        # Si c'est une pièce et qu'on a un poids estimé, convertir en grammes
+        if unite_lower == 'pièce' and ingredient and ingredient.poids_estime_g:
+            return quantite * ingredient.poids_estime_g, 'g'
+
+        if unite_lower in cls.CONVERSIONS:
+            unite_base, facteur = cls.CONVERSIONS[unite_lower]
+            return quantite * facteur, unite_base
+
+        # Si l'unité n'est pas reconnue, retourner telle quelle
+        return quantite, unite
+
+    @classmethod
+    def convertir_pour_affichage(cls, quantite, unite, ingredient=None):
+        """
+        Convertit une quantité pour l'affichage
+        Pour les fruits & légumes avec poids estimé, convertit g → pièce
+
+        Args:
+            quantite: La quantité en unité de base
+            unite: L'unité de base
+            ingredient: Objet Ingredient (optionnel)
+
+        Returns:
+            tuple (quantite_affichage, unite_affichage, quantite_detail_g)
+        """
+        # Si c'est un ingrédient avec poids estimé en grammes, afficher en pièces
+        if unite == 'g' and ingredient and ingredient.poids_estime_g:
+            nb_pieces = quantite / ingredient.poids_estime_g
+            return nb_pieces, 'pièce', quantite
+
+        # Sinon, retourner tel quel
+        return quantite, unite, None
+
+    @classmethod
+    def peuvent_etre_additionnees(cls, unite1, unite2, ingredient=None):
+        """
+        Vérifie si deux unités peuvent être additionnées (même unité de base)
+
+        Args:
+            unite1: Première unité
+            unite2: Deuxième unité
+            ingredient: Objet Ingredient (optionnel)
+
+        Returns:
+            bool: True si les unités peuvent être additionnées
+        """
+        if not unite1 or not unite2:
+            return unite1 == unite2
+
+        _, base1 = cls.normaliser(1, unite1, ingredient)
+        _, base2 = cls.normaliser(1, unite2, ingredient)
+
+        return base1 == base2
+
+
 @login_manager.user_loader
 def load_user(user_id):
     """Callback pour charger un utilisateur"""
@@ -52,6 +151,7 @@ class Ingredient(db.Model):
     lieu_rangement = db.Column(db.String(100))  # Où est rangé l'ingrédient (frigo, placard, congélateur, etc.)
     mois_saison = db.Column(db.String(200))  # Mois de saison pour fruits/légumes (format: "Janvier,Février,Mars")
     stock_limite = db.Column(db.Float)  # Quantité minimale en stock, seuil d'alerte
+    poids_estime_g = db.Column(db.Float)  # Poids estimé d'une pièce en grammes (pour conversion pièce ↔ g)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relations
@@ -138,12 +238,69 @@ class Recette(db.Model):
     auteur_nom = db.Column(db.String(100))  # Nom de l'auteur de la recette
     note = db.Column(db.Text)  # Notes personnelles
     photo_url = db.Column(db.String(255))
+    mois_saison = db.Column(db.String(200))  # Mois de saison basés sur les ingrédients (format: "Janvier,Février,Mars")
+    type_repas = db.Column(db.String(200))  # Type de repas (format: "Petit-déjeuner,Déjeuner,Goûter,Dîner")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     # Relations
     ingredients = db.relationship('RecetteIngredient', backref='recette', lazy='dynamic', cascade='all, delete-orphan')
     instructions = db.relationship('Instruction', backref='recette', lazy='dynamic', cascade='all, delete-orphan', order_by='Instruction.ordre')
+
+    # Types de repas prédéfinis
+    TYPES_REPAS = ['Petit-déjeuner', 'Déjeuner', 'Goûter', 'Dîner']
+
+    def calculer_mois_saison_auto(self):
+        """
+        Calcule automatiquement les mois de saison en fonction des ingrédients
+        Retourne l'intersection des mois de tous les ingrédients saisonniers
+        Si aucun ingrédient n'a de mois défini, retourne tous les mois
+        """
+        mois_tous = set(Ingredient.MOIS)
+        mois_intersection = None
+
+        for ri in self.ingredients:
+            ingredient = ri.ingredient
+            if ingredient and ingredient.mois_saison:
+                mois_ing = set(ingredient.get_mois_saison_list())
+                if mois_ing:  # Si l'ingrédient a des mois définis
+                    if mois_intersection is None:
+                        mois_intersection = mois_ing
+                    else:
+                        mois_intersection = mois_intersection.intersection(mois_ing)
+
+        # Si aucun ingrédient saisonnier ou intersection vide, disponible toute l'année
+        if mois_intersection is None or len(mois_intersection) == 0:
+            return []
+
+        # Retourner les mois dans l'ordre
+        return [m for m in Ingredient.MOIS if m in mois_intersection]
+
+    def get_mois_saison_list(self):
+        """Retourne la liste des mois de saison"""
+        if not self.mois_saison:
+            return []
+        return [m.strip() for m in self.mois_saison.split(',') if m.strip()]
+
+    def set_mois_saison_list(self, mois_list):
+        """Définit les mois de saison à partir d'une liste"""
+        if mois_list:
+            self.mois_saison = ','.join(mois_list)
+        else:
+            self.mois_saison = None
+
+    def get_type_repas_list(self):
+        """Retourne la liste des types de repas"""
+        if not self.type_repas:
+            return []
+        return [t.strip() for t in self.type_repas.split(',') if t.strip()]
+
+    def set_type_repas_list(self, types_list):
+        """Définit les types de repas à partir d'une liste"""
+        if types_list:
+            self.type_repas = ','.join(types_list)
+        else:
+            self.type_repas = None
 
     def get_ingredients_for_portions(self, nb_portions):
         """
@@ -177,6 +334,34 @@ class RecetteIngredient(db.Model):
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
     quantite = db.Column(db.Float, nullable=False)
     unite = db.Column(db.String(20))  # g, ml, pièce, etc.
+
+    def get_affichage_avec_poids(self):
+        """
+        Retourne l'affichage avec le poids estimé entre parenthèses
+        Ex: "3 pièces (~450g)" ou "250 g"
+
+        Returns:
+            str: Quantité formatée avec poids estimé si applicable
+        """
+        import math
+
+        # Si c'est en pièces et qu'on a un poids estimé, afficher le poids
+        if self.unite and self.unite.lower() == 'pièce' and self.ingredient.poids_estime_g:
+            poids_total = self.quantite * self.ingredient.poids_estime_g
+            qte_arrondie = math.ceil(self.quantite) if self.quantite > 1 else self.quantite
+            poids_arrondi = math.ceil(poids_total)
+
+            # Pluriel si nécessaire
+            if qte_arrondie > 1:
+                return f"{qte_arrondie:.0f} pièces (~{poids_arrondi}g)"
+            else:
+                return f"{qte_arrondie:.1f} pièce (~{poids_arrondi}g)"
+
+        # Sinon affichage standard
+        if self.quantite == int(self.quantite):
+            return f"{int(self.quantite)} {self.unite}"
+        else:
+            return f"{self.quantite:.1f} {self.unite}"
 
     def __repr__(self):
         return f'<RecetteIngredient {self.quantite} {self.unite}>'
@@ -216,6 +401,10 @@ class Menu(db.Model):
         """
         Génère automatiquement la liste de courses pour ce menu
         en ajustant les quantités selon le nombre de personnes
+
+        IMPORTANT: À la génération initiale, TOUS les ingrédients sont ajoutés
+        sans déduction du stock. La déduction du stock se fait dans la phase
+        "réviser" via la méthode verifier_stock() de ListeCourse.
         """
         ingredients_totaux = {}
 
@@ -228,14 +417,17 @@ class Menu(db.Model):
                     ingredients_ajustes = recette.get_ingredients_for_portions(self.nb_personnes)
 
                     for ingredient, quantite, unite in ingredients_ajustes:
-                        key = (ingredient.id, unite)
+                        # Normaliser l'unité pour regrouper les quantités
+                        quantite_normalisee, unite_base = UnitConverter.normaliser(quantite, unite, ingredient)
+
+                        key = (ingredient.id, unite_base)
                         if key in ingredients_totaux:
-                            ingredients_totaux[key]['quantite'] += quantite
+                            ingredients_totaux[key]['quantite'] += quantite_normalisee
                         else:
                             ingredients_totaux[key] = {
                                 'ingredient': ingredient,
-                                'quantite': quantite,
-                                'unite': unite
+                                'quantite': quantite_normalisee,
+                                'unite': unite_base
                             }
 
         # Créer une nouvelle liste de courses
@@ -248,31 +440,18 @@ class Menu(db.Model):
         db.session.add(liste)
         db.session.flush()  # Pour obtenir l'ID
 
-        # Créer les items en vérifiant le stock
+        # Créer TOUS les items sans déduction du stock (brouillon)
+        # La déduction se fera lors de la révision
         for data in ingredients_totaux.values():
-            quantite_necessaire = data['quantite']
-
-            # Vérifier le stock pour cet ingrédient
-            stock_item = Stock.query.filter_by(
-                user_id=self.created_by,
-                ingredient_id=data['ingredient'].id
-            ).first()
-
-            if stock_item and stock_item.unite == data['unite']:
-                # Si on a du stock avec la même unité, déduire la quantité
-                quantite_necessaire -= stock_item.quantite
-
-            # N'ajouter l'item que s'il reste une quantité à acheter
-            if quantite_necessaire > 0:
-                item = ListeCourseItem(
-                    liste_id=liste.id,
-                    nom_ingredient=data['ingredient'].nom,
-                    quantite=quantite_necessaire,
-                    unite=data['unite'],
-                    rayon=data['ingredient'].categorie,
-                    achete=False
-                )
-                db.session.add(item)
+            item = ListeCourseItem(
+                liste_id=liste.id,
+                nom_ingredient=data['ingredient'].nom,
+                quantite=data['quantite'],
+                unite=data['unite'],
+                rayon=data['ingredient'].categorie,
+                achete=False
+            )
+            db.session.add(item)
 
         return liste
 
@@ -321,6 +500,80 @@ class ListeCourse(db.Model):
 
     # Relations
     ingredients = db.relationship('ListeCourseItem', backref='liste', lazy='dynamic', cascade='all, delete-orphan')
+
+    def verifier_stock(self):
+        """
+        Vérifier le stock pour chaque ingrédient et calculer quantite_en_stock
+        Cette méthode est appelée lors de la phase "réviser"
+        Les items ne sont PAS supprimés automatiquement, l'utilisateur décide
+        """
+        from app.models import Stock, Ingredient
+
+        for item in self.ingredients.all():
+            # Trouver l'ingrédient dans la base
+            ingredient = Ingredient.query.filter_by(nom=item.nom_ingredient).first()
+            if ingredient:
+                # Chercher le stock de l'utilisateur pour cet ingrédient
+                stock_item = Stock.query.filter_by(
+                    user_id=self.created_by,
+                    ingredient_id=ingredient.id
+                ).first()
+
+                if stock_item:
+                    # Normaliser le stock pour comparer avec la quantité nécessaire
+                    stock_normalise, stock_unite_base = UnitConverter.normaliser(
+                        stock_item.quantite, stock_item.unite, ingredient
+                    )
+
+                    # Normaliser la quantité nécessaire
+                    qte_necessaire_norm, qte_unite_base = UnitConverter.normaliser(
+                        item.quantite, item.unite, ingredient
+                    )
+
+                    # Si les unités correspondent, stocker le stock
+                    if stock_unite_base == qte_unite_base:
+                        item.quantite_en_stock = stock_normalise
+                    else:
+                        # Unités incompatibles
+                        item.quantite_en_stock = 0
+                else:
+                    # Pas de stock
+                    item.quantite_en_stock = 0
+            else:
+                item.quantite_en_stock = 0
+
+    def retirer_items_en_stock(self):
+        """
+        Retirer tous les items dont le stock est suffisant
+        Cette méthode est appelée manuellement par l'utilisateur
+        """
+        from app.models import Ingredient
+
+        items_a_supprimer = []
+
+        for item in self.ingredients.all():
+            # Si quantite_en_stock >= quantite nécessaire, marquer pour suppression
+            if item.quantite_en_stock is not None and item.quantite_en_stock > 0:
+                ingredient = Ingredient.query.filter_by(nom=item.nom_ingredient).first()
+
+                if ingredient:
+                    # Normaliser pour comparer
+                    qte_necessaire_norm, qte_unite_base = UnitConverter.normaliser(
+                        item.quantite, item.unite, ingredient
+                    )
+                    stock_normalise, stock_unite_base = UnitConverter.normaliser(
+                        item.quantite_en_stock, item.unite, ingredient
+                    )
+
+                    # Si stock suffisant, marquer pour suppression
+                    if stock_unite_base == qte_unite_base and stock_normalise >= qte_necessaire_norm:
+                        items_a_supprimer.append(item)
+
+        # Supprimer les items
+        for item in items_a_supprimer:
+            db.session.delete(item)
+
+        return len(items_a_supprimer)
 
     def valider(self):
         """Marquer la liste comme validée (prête pour les courses)"""
@@ -378,10 +631,74 @@ class ListeCourseItem(db.Model):
     liste_id = db.Column(db.Integer, db.ForeignKey('liste_courses.id'), nullable=False)
     nom_ingredient = db.Column(db.String(100), nullable=False)
     quantite = db.Column(db.Float, nullable=False)  # Quantité nécessaire (de la recette)
+    quantite_en_stock = db.Column(db.Float, nullable=True)  # Quantité présumée en stock (calculée automatiquement)
     quantite_achetee = db.Column(db.Float, nullable=True)  # Quantité réellement achetée
     unite = db.Column(db.String(20))
     rayon = db.Column(db.String(50))  # Pour organiser la liste par rayon
     achete = db.Column(db.Boolean, default=False)
+
+    def get_quantite_arrondie(self):
+        """Retourne la quantité arrondie à l'unité supérieure pour l'affichage en magasin"""
+        import math
+        if self.quantite_achetee is not None:
+            return math.ceil(float(self.quantite_achetee)) if self.quantite_achetee > 0 else 0
+        return math.ceil(float(self.quantite)) if self.quantite > 0 else 0
+
+    def get_quantite_manquante(self):
+        """Retourne la quantité manquante (nécessaire - en stock)"""
+        if self.quantite_en_stock is None:
+            return self.quantite
+        manquante = self.quantite - self.quantite_en_stock
+        return max(0, manquante)  # Ne pas retourner de valeur négative
+
+    def get_quantite_manquante_arrondie(self):
+        """Retourne la quantité manquante arrondie à l'unité supérieure"""
+        import math
+        qte_manquante = self.get_quantite_manquante()
+        if qte_manquante <= 0:
+            return 0
+        return math.ceil(float(qte_manquante))
+
+    def get_lieu_rangement(self):
+        """Retourne le lieu de rangement de l'ingrédient"""
+        ingredient = Ingredient.query.filter_by(nom=self.nom_ingredient).first()
+        if ingredient and ingredient.lieu_rangement:
+            return ingredient.lieu_rangement
+        return "Autre"
+
+    def get_affichage_quantite(self):
+        """
+        Retourne la quantité formatée pour l'affichage
+        Pour les fruits & légumes : affiche en pièces avec le poids entre parenthèses
+        Pour les autres : affiche la quantité normale
+
+        Returns:
+            str: Quantité formatée (ex: "3 pièces (~450g)" ou "250 g")
+        """
+        import math
+        ingredient = Ingredient.query.filter_by(nom=self.nom_ingredient).first()
+
+        if ingredient:
+            # Convertir pour affichage (g → pièce si applicable)
+            qte_affichage, unite_affichage, poids_g = UnitConverter.convertir_pour_affichage(
+                self.quantite, self.unite, ingredient
+            )
+
+            if poids_g is not None:
+                # C'est un ingrédient avec poids estimé : afficher pièces + poids
+                nb_pieces_arrondi = math.ceil(qte_affichage)
+                poids_arrondi = math.ceil(poids_g)
+                return f"{nb_pieces_arrondi} {unite_affichage}{'s' if nb_pieces_arrondi > 1 else ''} (~{poids_arrondi}g)"
+            else:
+                # Affichage normal
+                if self.unite in ['g', 'ml']:
+                    qte_arrondie = math.ceil(self.quantite)
+                    return f"{qte_arrondie} {self.unite}"
+                else:
+                    return f"{self.quantite:.1f} {self.unite}"
+        else:
+            # Ingrédient non trouvé, affichage par défaut
+            return f"{self.quantite:.1f} {self.unite}"
 
     def __repr__(self):
         return f'<ListeCourseItem {self.quantite} {self.unite} {self.nom_ingredient}>'
@@ -434,3 +751,72 @@ class Stock(db.Model):
 
     def __repr__(self):
         return f'<Stock {self.quantite} {self.unite}>'
+
+
+class Inventaire(db.Model):
+    """Modèle pour l'historique des inventaires"""
+    __tablename__ = 'inventaires'
+
+    id = db.Column(db.Integer, primary_key=True)
+    date_inventaire = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    items = db.relationship('InventaireItem', backref='inventaire', lazy='dynamic', cascade='all, delete-orphan')
+
+    def get_total_ecarts(self):
+        """Retourne le nombre total d'écarts (positifs et négatifs)"""
+        ecarts_positifs = sum(1 for item in self.items if item.ecart > 0)
+        ecarts_negatifs = sum(1 for item in self.items if item.ecart < 0)
+        return {
+            'positifs': ecarts_positifs,
+            'negatifs': ecarts_negatifs,
+            'total': ecarts_positifs + ecarts_negatifs
+        }
+
+    def get_ingredients_manquants(self):
+        """Retourne la liste des ingrédients avec écarts négatifs"""
+        return [item for item in self.items if item.ecart < 0]
+
+    def get_ingredients_surplus(self):
+        """Retourne la liste des ingrédients avec écarts positifs"""
+        return [item for item in self.items if item.ecart > 0]
+
+    def __repr__(self):
+        return f'<Inventaire {self.date_inventaire.strftime("%Y-%m-%d %H:%M")}>'
+
+
+class InventaireItem(db.Model):
+    """Modèle pour les items d'un inventaire"""
+    __tablename__ = 'inventaire_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    inventaire_id = db.Column(db.Integer, db.ForeignKey('inventaires.id', ondelete='CASCADE'), nullable=False)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id'), nullable=False)
+    quantite_theorique = db.Column(db.Float, nullable=False)
+    quantite_reelle = db.Column(db.Float, nullable=False)
+    ecart = db.Column(db.Float, nullable=False)  # quantite_reelle - quantite_theorique
+    unite = db.Column(db.String(20), nullable=False)
+
+    # Relation vers l'ingrédient
+    ingredient = db.relationship('Ingredient', backref='inventaire_items')
+
+    def get_ecart_pourcentage(self):
+        """Retourne l'écart en pourcentage"""
+        if self.quantite_theorique == 0:
+            return 0
+        return (self.ecart / self.quantite_theorique) * 100
+
+    def get_affichage_quantites(self):
+        """Retourne un dictionnaire avec les quantités formatées"""
+        return {
+            'theorique': f"{self.quantite_theorique:.1f} {self.unite}",
+            'reelle': f"{self.quantite_reelle:.1f} {self.unite}",
+            'ecart': f"{self.ecart:+.1f} {self.unite}",  # +/- devant
+            'ecart_pourcent': f"{self.get_ecart_pourcentage():+.1f}%"
+        }
+
+    def __repr__(self):
+        return f'<InventaireItem {self.ingredient.nom}: {self.ecart:+.1f} {self.unite}>'

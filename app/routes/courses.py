@@ -81,6 +81,94 @@ def delete(id):
     return redirect(url_for('courses.index'))
 
 
+@bp.route('/<int:id>/reviser')
+@login_required
+def reviser(id):
+    """Page de révision de la liste avec vérification automatique du stock"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de modifier cette liste', 'danger')
+        return redirect(url_for('courses.index'))
+
+    if liste.statut != 'brouillon':
+        flash('Seules les listes en brouillon peuvent être révisées', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    # Vérifier le stock automatiquement
+    liste.verifier_stock()
+    db.session.commit()
+
+    return render_template('courses/reviser.html', liste=liste)
+
+
+@bp.route('/<int:id>/verifier')
+@login_required
+def verifier(id):
+    """Page de vérification physique (étape 2) - tri par lieu de rangement"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de modifier cette liste', 'danger')
+        return redirect(url_for('courses.index'))
+
+    if liste.statut != 'validee':
+        flash('Seules les listes validées peuvent être vérifiées', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    return render_template('courses/verifier.html', liste=liste)
+
+
+@bp.route('/<int:id>/retirer-item/<int:item_id>', methods=['POST'])
+@login_required
+def retirer_item(id, item_id):
+    """Retirer un article de la liste (AJAX)"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    if liste.statut not in ['brouillon', 'validee']:
+        return jsonify({'success': False, 'error': 'Liste en cours ou terminée'}), 400
+
+    from app.models import ListeCourseItem
+    item = ListeCourseItem.query.get_or_404(item_id)
+
+    if item.liste_id != liste.id:
+        return jsonify({'success': False, 'error': 'Item not in list'}), 403
+
+    db.session.delete(item)
+    db.session.commit()
+
+    return jsonify({'success': True})
+
+
+@bp.route('/<int:id>/retirer-items-en-stock', methods=['POST'])
+@login_required
+def retirer_items_en_stock(id):
+    """Retirer tous les articles dont le stock est suffisant"""
+    liste = ListeCourse.query.get_or_404(id)
+
+    if liste.created_by != current_user.id:
+        flash('Vous n\'avez pas la permission de modifier cette liste', 'danger')
+        return redirect(url_for('courses.index'))
+
+    if liste.statut not in ['brouillon', 'validee']:
+        flash('Cette action n\'est possible que pour les listes en brouillon ou validées', 'warning')
+        return redirect(url_for('courses.detail', id=id))
+
+    # Retirer les items en stock
+    nb_retires = liste.retirer_items_en_stock()
+    db.session.commit()
+
+    if nb_retires > 0:
+        flash(f'{nb_retires} article(s) en stock retiré(s) de la liste', 'success')
+    else:
+        flash('Aucun article à retirer (pas de stock suffisant)', 'info')
+
+    return redirect(url_for('courses.detail', id=id))
+
+
 @bp.route('/<int:id>/valider', methods=['POST'])
 @login_required
 def valider(id):

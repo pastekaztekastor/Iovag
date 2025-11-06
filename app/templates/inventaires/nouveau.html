@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvel Inventaire{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('stock.index') }}">Stock</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('inventaires.index') }}">Inventaires</a></li>
+                <li class="breadcrumb-item active">Nouvel inventaire</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-10 offset-lg-1">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h1 class="card-title mb-4">
+                    <i class="bi bi-clipboard-check"></i> Nouvel Inventaire
+                </h1>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Comment faire l'inventaire :</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Parcourez votre cuisine et comptez la quantité réelle de chaque ingrédient</li>
+                        <li>Remplissez les champs "Stock réel" avec les quantités comptées</li>
+                        <li>Utilisez le bouton "Copier les quantités théoriques" pour pré-remplir rapidement</li>
+                        <li>Les écarts seront calculés automatiquement et vos stocks seront mis à jour</li>
+                    </ul>
+                </div>
+
+                <form method="POST" action="{{ url_for('inventaires.sauvegarder') }}" id="inventaire-form">
+                    <div class="mb-4">
+                        <label for="notes" class="form-label">Notes (optionnel)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Notes sur cet inventaire..."></textarea>
+                    </div>
+
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <h4>Stocks par lieu de rangement</h4>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copierQuantitesTheoriques()">
+                            <i class="bi bi-files"></i> Copier les quantités théoriques
+                        </button>
+                    </div>
+
+                    {% if stocks_par_lieu %}
+                        {% for lieu, stocks in stocks_par_lieu.items() %}
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-geo-alt"></i> {{ lieu }}
+                                    <span class="badge bg-secondary ms-2">{{ stocks|length }} ingrédient(s)</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 40%;">Ingrédient</th>
+                                                <th style="width: 20%;" class="text-end">Stock théorique</th>
+                                                <th style="width: 20%;" class="text-center">Stock réel</th>
+                                                <th style="width: 20%;" class="text-end">Écart</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for stock in stocks %}
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ stock.ingredient.nom }}</strong>
+                                                    {% if stock.ingredient.categorie %}
+                                                        <br><small class="text-muted">{{ stock.ingredient.categorie }}</small>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-end">
+                                                    <span class="theorique-{{ stock.id }}">{{ stock.quantite }}</span> {{ stock.unite }}
+                                                </td>
+                                                <td class="text-center">
+                                                    <input type="number"
+                                                           class="form-control form-control-sm text-center quantite-reelle"
+                                                           name="quantite_reelle_{{ stock.id }}"
+                                                           id="reelle_{{ stock.id }}"
+                                                           data-stock-id="{{ stock.id }}"
+                                                           data-theorique="{{ stock.quantite }}"
+                                                           data-unite="{{ stock.unite }}"
+                                                           step="0.1"
+                                                           min="0"
+                                                           placeholder="0"
+                                                           oninput="calculerEcart({{ stock.id }})">
+                                                </td>
+                                                <td class="text-end">
+                                                    <span id="ecart_{{ stock.id }}" class="fw-bold">-</span>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Aucun stock à inventorier. <a href="{{ url_for('stock.index') }}">Gérez votre stock</a> d'abord.
+                        </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('inventaires.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                        {% if stocks_par_lieu %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Valider l'inventaire
+                        </button>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function calculerEcart(stockId) {
+    const input = document.getElementById('reelle_' + stockId);
+    const theorique = parseFloat(input.dataset.theorique);
+    const reelle = parseFloat(input.value) || 0;
+    const ecart = reelle - theorique;
+    const unite = input.dataset.unite;
+
+    const ecartSpan = document.getElementById('ecart_' + stockId);
+
+    if (input.value === '') {
+        ecartSpan.textContent = '-';
+        ecartSpan.className = 'fw-bold';
+    } else {
+        const signe = ecart >= 0 ? '+' : '';
+        ecartSpan.textContent = signe + ecart.toFixed(1) + ' ' + unite;
+
+        if (ecart > 0) {
+            ecartSpan.className = 'fw-bold text-success';
+        } else if (ecart < 0) {
+            ecartSpan.className = 'fw-bold text-danger';
+        } else {
+            ecartSpan.className = 'fw-bold text-muted';
+        }
+    }
+}
+
+function copierQuantitesTheoriques() {
+    const inputs = document.querySelectorAll('.quantite-reelle');
+    inputs.forEach(input => {
+        input.value = input.dataset.theorique;
+        calculerEcart(input.dataset.stockId);
+    });
+}
+</script>
+{% endblock %}

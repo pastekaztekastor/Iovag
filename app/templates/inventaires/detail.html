@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Inventaire du {{ inventaire.date_inventaire.strftime('%d/%m/%Y') }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('stock.index') }}">Stock</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('inventaires.index') }}">Inventaires</a></li>
+                <li class="breadcrumb-item active">{{ inventaire.date_inventaire.strftime('%d/%m/%Y %H:%M') }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h1 class="card-title mb-2">
+                            <i class="bi bi-clipboard-check"></i> Inventaire
+                        </h1>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-calendar"></i> {{ inventaire.date_inventaire.strftime('%d/%m/%Y à %H:%M') }}
+                        </p>
+                    </div>
+                    <form method="POST"
+                          action="{{ url_for('inventaires.supprimer', id=inventaire.id) }}"
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet inventaire ?');">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+
+                {% if inventaire.notes %}
+                <div class="alert alert-secondary">
+                    <i class="bi bi-sticky"></i> <strong>Notes :</strong> {{ inventaire.notes }}
+                </div>
+                {% endif %}
+
+                {% set ecarts = inventaire.get_total_ecarts() %}
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ inventaire.items.count() }}</h3>
+                                <small class="text-muted">Ingrédients inventoriés</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ ecarts['negatifs'] }}</h3>
+                                <small>Manquants</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ ecarts['positifs'] }}</h3>
+                                <small>En surplus</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <h4 class="mb-3">Détails par lieu de rangement</h4>
+
+        {% if items_par_lieu %}
+            {% for lieu, items in items_par_lieu.items() %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt"></i> {{ lieu }}
+                        <span class="badge bg-secondary ms-2">{{ items|length }} ingrédient(s)</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 35%;">Ingrédient</th>
+                                    <th style="width: 15%;" class="text-end">Stock théorique</th>
+                                    <th style="width: 15%;" class="text-end">Stock réel</th>
+                                    <th style="width: 15%;" class="text-end">Écart</th>
+                                    <th style="width: 20%;" class="text-end">Écart %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                {% set display = item.get_affichage_quantites() %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.ingredient.nom }}</strong>
+                                        {% if item.ingredient.categorie %}
+                                            <br><small class="text-muted">{{ item.ingredient.categorie }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">{{ display['theorique'] }}</td>
+                                    <td class="text-end">{{ display['reelle'] }}</td>
+                                    <td class="text-end">
+                                        {% if item.ecart > 0 %}
+                                            <span class="text-success fw-bold">{{ display['ecart'] }}</span>
+                                        {% elif item.ecart < 0 %}
+                                            <span class="text-danger fw-bold">{{ display['ecart'] }}</span>
+                                        {% else %}
+                                            <span class="text-muted">{{ display['ecart'] }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if item.ecart > 0 %}
+                                            <span class="badge bg-success">{{ display['ecart_pourcent'] }}</span>
+                                        {% elif item.ecart < 0 %}
+                                            <span class="badge bg-danger">{{ display['ecart_pourcent'] }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">0%</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                Aucun item dans cet inventaire.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col">
+        <a href="{{ url_for('inventaires.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour à la liste
+        </a>
+    </div>
+</div>
+{% endblock %}

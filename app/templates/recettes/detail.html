@@ -84,7 +84,7 @@
                 <ul class="list-group list-group-flush">
                     {% for ri in recette.ingredients %}
                     <li class="list-group-item">
-                        <strong>{{ ri.quantite }} {{ ri.unite }}</strong> {{ ri.ingredient.nom }}
+                        <strong>{{ ri.get_affichage_avec_poids() }}</strong> {{ ri.ingredient.nom }}
                     </li>
                     {% endfor %}
                 </ul>

@@ -84,6 +84,28 @@
                         <textarea class="form-control" id="note" name="note" rows="3">{{ recette.note or '' }}</textarea>
                     </div>
 
+                    <div class="mb-4">
+                        <label class="form-label">Mois de saison</label>
+                        <p class="text-muted small">Les mois seront calculés automatiquement selon les ingrédients. Vous pouvez les modifier si besoin.</p>
+                        <div class="row">
+                            {% set all_mois = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+                            {% set mois_existants = recette.get_mois_saison_list() %}
+                            {% for mois in all_mois %}
+                            <div class="col-md-3 col-sm-4 col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="mois_saison[]" value="{{ mois }}" id="mois_{{ loop.index }}" {% if mois in mois_existants %}checked{% endif %}>
+                                    <label class="form-check-label" for="mois_{{ loop.index }}">
+                                        {{ mois }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="auto-calculate-mois">
+                            <i class="bi bi-magic"></i> Calculer automatiquement
+                        </button>
+                    </div>
+
                     <hr>
 
                     <!-- Ingrédients -->
@@ -189,10 +211,13 @@
 
 {% block extra_js %}
 <script>
-// Créer un mapping des ingrédients avec leurs unités
+// Créer un mapping des ingrédients avec leurs unités et mois de saison
 const ingredientsData = {
     {% for ingredient in ingredients %}
-    "{{ ingredient.nom }}": "{{ ingredient.unite_mesure or '' }}"{% if not loop.last %},{% endif %}
+    "{{ ingredient.nom }}": {
+        "unite": "{{ ingredient.unite_mesure or '' }}",
+        "mois_saison": {{ ingredient.get_mois_saison_list() | tojson }}
+    }{% if not loop.last %},{% endif %}
     {% endfor %}
 };
 
@@ -206,7 +231,49 @@ document.addEventListener('input', function(e) {
 
         // Si l'ingrédient existe dans la base et que l'unité n'est pas déjà remplie
         if (ingredientsData.hasOwnProperty(nomValue) && !uniteInput.value) {
-            uniteInput.value = ingredientsData[nomValue];
+            uniteInput.value = ingredientsData[nomValue].unite;
+        }
+    }
+});
+
+// Calculer automatiquement les mois de saison
+document.getElementById('auto-calculate-mois').addEventListener('click', function() {
+    const allMois = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    let moisIntersection = null;
+
+    // Récupérer tous les ingrédients sélectionnés
+    const ingredientInputs = document.querySelectorAll('.ingredient-nom');
+
+    ingredientInputs.forEach(input => {
+        const nomIngredient = input.value.trim();
+        if (nomIngredient && ingredientsData.hasOwnProperty(nomIngredient)) {
+            const moisIng = ingredientsData[nomIngredient].mois_saison;
+
+            if (moisIng && moisIng.length > 0) {
+                if (moisIntersection === null) {
+                    moisIntersection = new Set(moisIng);
+                } else {
+                    moisIntersection = new Set([...moisIntersection].filter(m => moisIng.includes(m)));
+                }
+            }
+        }
+    });
+
+    // Décocher tous les mois
+    document.querySelectorAll('input[name="mois_saison[]"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+
+    // Cocher les mois de l'intersection
+    if (moisIntersection && moisIntersection.size > 0) {
+        moisIntersection.forEach(mois => {
+            const checkbox = document.querySelector(`input[name="mois_saison[]"][value="${mois}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+    } else {
+        // Si pas d'intersection ou pas de mois saisonniers, cocher tous les mois (disponible toute l'année)
+        if (ingredientInputs.length === 0 || [...ingredientInputs].every(inp => !inp.value.trim())) {
+            alert('Veuillez ajouter des ingrédients avant de calculer les mois de saison');
         }
     }
 });

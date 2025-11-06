@@ -1,0 +1,87 @@
+/* Styles pour le composant de recherche de recettes */
+
+.recipe-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 9999;  /* Très haut pour passer au-dessus de tout */
+    margin-top: 0.25rem;
+}
+
+/* Augmenter le z-index du conteneur parent quand le menu est ouvert */
+.recipe-search-active {
+    position: relative;
+    z-index: 10000 !important;
+}
+
+.recipe-search-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.recipe-search-item:last-child {
+    border-bottom: none;
+}
+
+.recipe-search-item:hover,
+.recipe-search-item.selected {
+    background-color: #f8f9fa;
+}
+
+.recipe-search-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+.recipe-search-item-name {
+    font-weight: 500;
+    color: #212529;
+}
+
+.recipe-search-season {
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.recipe-search-item-details {
+    font-size: 0.875rem;
+}
+
+.recipe-search-no-result {
+    padding: 1rem;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Indicateur de chargement */
+.recipe-search-loading {
+    padding: 1rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+/* Icône de saison dans le champ de recherche */
+.recipe-input-wrapper {
+    position: relative;
+}
+
+.recipe-input-season-indicator {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.25rem;
+    pointer-events: none;
+}

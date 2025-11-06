@@ -19,7 +19,7 @@
 
 <!-- Filtres et recherche -->
 <div class="row mb-4">
-    <div class="col-md-6">
+    <div class="col-md-5">
         <input type="text" class="form-control" id="searchRecettes" placeholder="Rechercher une recette...">
     </div>
     <div class="col-md-3">
@@ -30,13 +30,18 @@
             <option value="3">3+ étoiles</option>
         </select>
     </div>
+    <div class="col-md-4">
+        <button class="btn btn-outline-success w-100" id="filterSaison" onclick="toggleSaisonFilter()">
+            <i class="bi bi-calendar-check"></i> <span id="saisonFilterText">Recettes de saison uniquement</span>
+        </button>
+    </div>
 </div>
 
 <!-- Liste des recettes -->
 {% if recettes %}
-<div class="row">
+<div class="row" id="recettesContainer">
     {% for recette in recettes %}
-    <div class="col-md-6 col-lg-4 mb-4">
+    <div class="col-md-6 col-lg-4 mb-4 recette-card" data-mois-saison="{{ recette.mois_saison or '' }}" data-evaluation="{{ recette.evaluation }}">
         <div class="card h-100 shadow-sm">
             {% if recette.photo_url %}
             <img src="{{ recette.photo_url }}" class="card-img-top" alt="{{ recette.nom }}" style="height: 200px; object-fit: cover;">
@@ -47,7 +52,22 @@
             {% endif %}
 
             <div class="card-body">
-                <h5 class="card-title">{{ recette.nom }}</h5>
+                <h5 class="card-title">
+                    {{ recette.nom }}
+                    {% set mois_actuels = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+                    {% set mois_actuel = mois_actuels[now.month - 1] %}
+                    {% if recette.mois_saison %}
+                        {% if mois_actuel in recette.get_mois_saison_list() %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-calendar-check"></i> De saison
+                        </span>
+                        {% endif %}
+                    {% else %}
+                    <span class="badge bg-info">
+                        <i class="bi bi-calendar"></i> Toute saison
+                    </span>
+                    {% endif %}
+                </h5>
 
                 <div class="star-rating mb-2">
                     {% for i in range(5) %}
@@ -94,4 +114,133 @@
     <a href="{{ url_for('recettes.create') }}" class="alert-link">Créer ma première recette</a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variables globales pour les filtres
+let saisonFilterActive = false;
+
+// Obtenir le mois actuel
+const moisActuels = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+const moisActuel = moisActuels[new Date().getMonth()];
+
+console.log('Mois actuel:', moisActuel);
+
+// Toggle filtre de saison
+function toggleSaisonFilter() {
+    saisonFilterActive = !saisonFilterActive;
+    const button = document.getElementById('filterSaison');
+    const text = document.getElementById('saisonFilterText');
+
+    console.log('Toggle filtre saison, actif:', saisonFilterActive);
+
+    if (saisonFilterActive) {
+        button.classList.remove('btn-outline-success');
+        button.classList.add('btn-success');
+        text.textContent = 'Toutes les recettes';
+    } else {
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-success');
+        text.textContent = 'Recettes de saison uniquement';
+    }
+
+    applyFilters();
+}
+
+// Appliquer tous les filtres
+function applyFilters() {
+    const searchInput = document.getElementById('searchRecettes');
+    const evalSelect = document.getElementById('filterEvaluation');
+
+    if (!searchInput || !evalSelect) {
+        return;
+    }
+
+    const searchTerm = searchInput.value.toLowerCase();
+    const evalFilter = evalSelect.value;
+    const cards = document.querySelectorAll('.recette-card');
+
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        let visible = true;
+
+        // Filtre de recherche
+        if (searchTerm) {
+            const title = card.querySelector('.card-title').textContent.toLowerCase();
+            if (!title.includes(searchTerm)) {
+                visible = false;
+            }
+        }
+
+        // Filtre d'évaluation
+        if (evalFilter) {
+            const cardEval = parseInt(card.dataset.evaluation);
+            const minEval = parseInt(evalFilter);
+            if (cardEval < minEval) {
+                visible = false;
+            }
+        }
+
+        // Filtre de saison
+        if (saisonFilterActive) {
+            const moisSaison = card.dataset.moisSaison;
+            console.log('Vérification carte, moisSaison:', moisSaison, 'mois actuel:', moisActuel);
+
+            if (!moisSaison || moisSaison === '') {
+                // Pas de mois définis = disponible toute l'année
+                console.log('  -> Pas de mois définis, visible');
+                visible = true;
+            } else {
+                // Vérifier si le mois actuel est dans la liste
+                const moisListe = moisSaison.split(',').map(m => m.trim());
+                console.log('  -> Mois liste:', moisListe, 'contient', moisActuel, '?', moisListe.includes(moisActuel));
+                if (!moisListe.includes(moisActuel)) {
+                    visible = false;
+                }
+            }
+        }
+
+        if (visible) {
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+
+    // Afficher un message si aucune recette ne correspond
+    const container = document.getElementById('recettesContainer');
+    if (container) {
+        let noResultsMsg = document.getElementById('noResultsMessage');
+        if (visibleCount === 0) {
+            if (!noResultsMsg) {
+                noResultsMsg = document.createElement('div');
+                noResultsMsg.id = 'noResultsMessage';
+                noResultsMsg.className = 'col-12';
+                noResultsMsg.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle"></i> Aucune recette ne correspond aux filtres sélectionnés.</div>';
+                container.appendChild(noResultsMsg);
+            }
+            noResultsMsg.style.display = '';
+        } else {
+            if (noResultsMsg) {
+                noResultsMsg.style.display = 'none';
+            }
+        }
+    }
+}
+
+// Event listeners
+const searchInput = document.getElementById('searchRecettes');
+const evalSelect = document.getElementById('filterEvaluation');
+
+if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+}
+
+if (evalSelect) {
+    evalSelect.addEventListener('change', applyFilters);
+}
+</script>
 {% endblock %}

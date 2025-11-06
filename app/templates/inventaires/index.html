@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Historique des Inventaires{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('stock.index') }}">Stock</a></li>
+                <li class="breadcrumb-item active">Inventaires</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="bi bi-clipboard-check"></i> Historique des Inventaires</h1>
+            <a href="{{ url_for('inventaires.nouveau') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Faire un inventaire
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if inventaires %}
+    <div class="row">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Date</th>
+                                    <th style="width: 15%;" class="text-center">Ingrédients</th>
+                                    <th style="width: 15%;" class="text-center">Écarts</th>
+                                    <th style="width: 35%;">Notes</th>
+                                    <th style="width: 15%;" class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inventaire in inventaires %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ inventaire.date_inventaire.strftime('%d/%m/%Y') }}</strong><br>
+                                        <small class="text-muted">{{ inventaire.date_inventaire.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary">
+                                            {{ inventaire.items.count() }} item(s)
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% set ecarts = inventaire.get_total_ecarts() %}
+                                        {% if ecarts['negatifs'] > 0 %}
+                                            <span class="badge bg-danger" title="Manquants">
+                                                <i class="bi bi-dash-circle"></i> {{ ecarts['negatifs'] }}
+                                            </span>
+                                        {% endif %}
+                                        {% if ecarts['positifs'] > 0 %}
+                                            <span class="badge bg-success ms-1" title="Surplus">
+                                                <i class="bi bi-plus-circle"></i> {{ ecarts['positifs'] }}
+                                            </span>
+                                        {% endif %}
+                                        {% if ecarts['total'] == 0 %}
+                                            <span class="text-muted">Aucun écart</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if inventaire.notes %}
+                                            <small>{{ inventaire.notes[:80] }}{% if inventaire.notes|length > 80 %}...{% endif %}</small>
+                                        {% else %}
+                                            <span class="text-muted fst-italic">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('inventaires.detail', id=inventaire.id) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Détails
+                                        </a>
+                                        <form method="POST"
+                                              action="{{ url_for('inventaires.supprimer', id=inventaire.id) }}"
+                                              style="display: inline;"
+                                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet inventaire ?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                Aucun inventaire enregistré. <a href="{{ url_for('inventaires.nouveau') }}">Faire un premier inventaire</a>.
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

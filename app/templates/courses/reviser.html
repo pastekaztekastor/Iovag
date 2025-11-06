@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Révision - {{ liste.nom }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('courses.index') }}">Listes de courses</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('courses.detail', id=liste.id) }}">{{ liste.nom }}</a></li>
+                <li class="breadcrumb-item active">Révision</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <i class="bi bi-clipboard-check"></i> Révision de la liste
+                    <span class="badge bg-info">Étape 1/3</span>
+                </h1>
+
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-lightbulb"></i> Vérification automatique du stock</h6>
+                    <p class="mb-2">Nous avons automatiquement vérifié votre stock présumé dans l'application.</p>
+                    <ul class="mb-0">
+                        <li>Les articles avec suffisamment de stock sont marqués en <span class="text-success">vert</span></li>
+                        <li>Vous pouvez retirer les articles dont vous n'avez pas besoin</li>
+                        <li>Vous pourrez vérifier physiquement votre stock à la prochaine étape</li>
+                    </ul>
+                </div>
+
+                {% set items = liste.ingredients.all() %}
+                {% if items|length > 0 %}
+                <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Articles ({{ items|length }})</h2>
+
+                <div class="list-group" id="itemsList">
+                    {% for item in items %}
+                    <div class="list-group-item" id="item_{{ item.id }}">
+                        <div class="row align-items-center">
+                            <!-- Informations de l'ingrédient -->
+                            <div class="col">
+                                <strong>{{ item.nom_ingredient }}</strong>
+                                {% if item.rayon %}
+                                <span class="badge bg-secondary ms-2">{{ item.rayon }}</span>
+                                {% endif %}
+                                <br>
+
+                                <!-- Quantité nécessaire -->
+                                <small class="text-muted">
+                                    <i class="bi bi-cart"></i> Nécessaire : <strong>{{ item.get_affichage_quantite() }}</strong>
+                                </small>
+                                <br>
+
+                                <!-- Quantité en stock -->
+                                {% if item.quantite_en_stock is not none and item.quantite_en_stock > 0 %}
+                                <small class="{% if item.quantite_en_stock >= item.quantite %}text-success{% else %}text-warning{% endif %}">
+                                    <i class="bi bi-box"></i> En stock : {{ item.quantite_en_stock|round(1) }} {{ item.unite }}
+                                </small>
+                                <br>
+                                {% endif %}
+
+                                <!-- Quantité manquante -->
+                                {% set qte_manquante = item.get_quantite_manquante() %}
+                                {% if qte_manquante > 0 %}
+                                <small class="text-danger">
+                                    <i class="bi bi-exclamation-triangle"></i> À acheter : <strong>{{ item.get_quantite_manquante_arrondie() }} {{ item.unite }}</strong>
+                                </small>
+                                {% elif item.quantite_en_stock is not none and item.quantite_en_stock > 0 %}
+                                <small class="text-success">
+                                    <i class="bi bi-check-circle"></i> <strong>Stock suffisant !</strong>
+                                </small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Bouton retirer -->
+                            <div class="col-auto">
+                                {% if qte_manquante <= 0 %}
+                                <button class="btn btn-success btn-sm" onclick="retirerItem({{ item.id }}, '{{ item.nom_ingredient }}')">
+                                    <i class="bi bi-check-circle"></i> Stock OK - Retirer
+                                </button>
+                                {% else %}
+                                <button class="btn btn-outline-danger btn-sm" onclick="retirerItem({{ item.id }}, '{{ item.nom_ingredient }}')">
+                                    <i class="bi bi-trash"></i> Retirer
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">La liste est vide. Tous les articles ont été retirés.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Actions</h5>
+                <div class="d-grid gap-2">
+                    <!-- Bouton pour retirer automatiquement les articles en stock -->
+                    <form method="POST" action="{{ url_for('courses.retirer_items_en_stock', id=liste.id) }}" onsubmit="return confirm('Retirer tous les articles dont le stock est suffisant ?');">
+                        <button type="submit" class="btn btn-success w-100" {% if items|length == 0 %}disabled{% endif %}>
+                            <i class="bi bi-check-circle-fill"></i> Retirer les articles en stock
+                        </button>
+                    </form>
+                    <small class="text-muted">Retire automatiquement tous les articles dont le stock est suffisant</small>
+
+                    <hr>
+
+                    <form method="POST" action="{{ url_for('courses.valider', id=liste.id) }}">
+                        <button type="submit" class="btn btn-primary w-100" {% if items|length == 0 %}disabled{% endif %}>
+                            <i class="bi bi-arrow-right-circle"></i> Passer à l'étape suivante
+                        </button>
+                    </form>
+                    <small class="text-muted">Passez à l'étape de vérification physique</small>
+
+                    <hr>
+
+                    <a href="{{ url_for('courses.detail', id=liste.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> Workflow</h5>
+                <ol class="small">
+                    <li class="text-primary fw-bold">
+                        <i class="bi bi-clipboard-check"></i> Révision automatique (stock app)
+                    </li>
+                    <li class="text-muted">
+                        <i class="bi bi-eye"></i> Vérification physique
+                    </li>
+                    <li class="text-muted">
+                        <i class="bi bi-cart"></i> Courses au magasin
+                    </li>
+                    <li class="text-muted">
+                        <i class="bi bi-check2-all"></i> Finalisation et mise à jour du stock
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function retirerItem(itemId, nomIngredient) {
+    if (!confirm(`Êtes-vous sûr de vouloir retirer "${nomIngredient}" de la liste ?`)) {
+        return;
+    }
+
+    fetch('{{ url_for("courses.retirer_item", id=liste.id, item_id=0) }}'.replace('/0', '/' + itemId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Retirer l'élément du DOM avec animation
+            const item = document.getElementById('item_' + itemId);
+            item.style.transition = 'opacity 0.3s';
+            item.style.opacity = '0';
+            setTimeout(() => {
+                item.remove();
+
+                // Vérifier s'il reste des items
+                const itemsList = document.getElementById('itemsList');
+                if (itemsList.children.length === 0) {
+                    location.reload();
+                }
+            }, 300);
+        } else {
+            alert('Erreur lors de la suppression de l\'article');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la suppression de l\'article');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Vérification physique - {{ liste.nom }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('courses.index') }}">Listes de courses</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('courses.detail', id=liste.id) }}">{{ liste.nom }}</a></li>
+                <li class="breadcrumb-item active">Vérification physique</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="card-title">
+                    <i class="bi bi-eye"></i> Vérification physique
+                    <span class="badge bg-primary">Étape 2/4</span>
+                </h1>
+
+                <div class="alert alert-primary">
+                    <h6><i class="bi bi-house-door"></i> Vérification à la maison</h6>
+                    <p class="mb-2">Parcourez physiquement votre cuisine et vérifiez ce que vous possédez réellement.</p>
+                    <ul class="mb-0">
+                        <li>Les articles sont organisés par <strong>lieu de rangement</strong></li>
+                        <li>Retirez les articles que vous possédez déjà en quantité suffisante</li>
+                        <li>Une fois terminé, commencez les courses pour aller au magasin</li>
+                    </ul>
+                </div>
+
+                {% set items = liste.ingredients.all() %}
+                {% if items|length > 0 %}
+
+                <!-- Grouper les items par lieu de rangement -->
+                {% set items_par_lieu = {} %}
+                {% for item in items %}
+                    {% set lieu = item.get_lieu_rangement() %}
+                    {% if lieu not in items_par_lieu %}
+                        {% set _ = items_par_lieu.update({lieu: []}) %}
+                    {% endif %}
+                    {% set _ = items_par_lieu[lieu].append(item) %}
+                {% endfor %}
+
+                <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Articles par lieu ({{ items|length }})</h2>
+
+                {% for lieu, items_lieu in items_par_lieu.items() %}
+                <div class="mb-4">
+                    <h5 class="text-primary">
+                        <i class="bi bi-geo-alt"></i> {{ lieu }} ({{ items_lieu|length }})
+                    </h5>
+
+                    <div class="list-group" id="itemsList_{{ loop.index }}">
+                        {% for item in items_lieu %}
+                        <div class="list-group-item" id="item_{{ item.id }}">
+                            <div class="row align-items-center">
+                                <!-- Informations de l'ingrédient -->
+                                <div class="col">
+                                    <strong>{{ item.nom_ingredient }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-cart"></i> À acheter : <strong>{{ item.get_quantite_arrondie() }} {{ item.unite }}</strong>
+                                    </small>
+                                </div>
+
+                                <!-- Bouton retirer -->
+                                <div class="col-auto">
+                                    <button class="btn btn-success btn-sm" onclick="retirerItem({{ item.id }}, '{{ item.nom_ingredient }}')">
+                                        <i class="bi bi-check-circle"></i> J'en ai - Retirer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% else %}
+                <p class="text-muted">La liste est vide. Tous les articles ont été retirés.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Actions</h5>
+                <div class="d-grid gap-2">
+                    <form method="POST" action="{{ url_for('courses.commencer', id=liste.id) }}">
+                        <button type="submit" class="btn btn-warning w-100" {% if items|length == 0 %}disabled{% endif %}>
+                            <i class="bi bi-cart-fill"></i> Commencer les courses
+                        </button>
+                    </form>
+                    <small class="text-muted">Démarrez quand vous êtes prêt pour le magasin</small>
+
+                    <hr>
+
+                    <a href="{{ url_for('courses.detail', id=liste.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> Workflow</h5>
+                <ol class="small">
+                    <li class="text-success">
+                        <i class="bi bi-clipboard-check"></i> Révision automatique (stock app) ✓
+                    </li>
+                    <li class="text-primary fw-bold">
+                        <i class="bi bi-eye"></i> Vérification physique
+                    </li>
+                    <li class="text-muted">
+                        <i class="bi bi-cart"></i> Courses au magasin
+                    </li>
+                    <li class="text-muted">
+                        <i class="bi bi-check2-all"></i> Finalisation
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function retirerItem(itemId, nomIngredient) {
+    if (!confirm(`Êtes-vous sûr de vouloir retirer "${nomIngredient}" de la liste ?`)) {
+        return;
+    }
+
+    fetch('{{ url_for("courses.retirer_item", id=liste.id, item_id=0) }}'.replace('/0', '/' + itemId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Retirer l'élément du DOM avec animation
+            const item = document.getElementById('item_' + itemId);
+            item.style.transition = 'opacity 0.3s';
+            item.style.opacity = '0';
+            setTimeout(() => {
+                item.remove();
+
+                // Vérifier s'il reste des items dans cette liste
+                const parent = item.closest('.list-group');
+                if (parent && parent.children.length === 0) {
+                    // Rafraîchir si tout est vide
+                    location.reload();
+                }
+            }, 300);
+        } else {
+            alert('Erreur lors de la suppression de l\'article');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la suppression de l\'article');
+    });
+}
+</script>
+{% endblock %}

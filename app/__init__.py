@@ -49,7 +49,7 @@ def create_app(config_name=None):
     from app import models
 
     # Enregistrer les blueprints
-    from app.routes import auth, menus, recettes, courses, main, ingredients, stock
+    from app.routes import auth, menus, recettes, courses, main, ingredients, stock, inventaires
 
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
@@ -58,6 +58,7 @@ def create_app(config_name=None):
     app.register_blueprint(courses.bp)
     app.register_blueprint(ingredients.bp)
     app.register_blueprint(stock.bp)
+    app.register_blueprint(inventaires.bp)
 
     # Contexte du processeur de template
     @app.context_processor

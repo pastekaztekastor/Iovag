@@ -3,7 +3,7 @@ Routes pour la gestion des recettes
 """
 import os
 from werkzeug.utils import secure_filename
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models import Recette, Ingredient, RecetteIngredient, Instruction
@@ -21,8 +21,9 @@ def allowed_file(filename):
 @login_required
 def index():
     """Liste des recettes"""
+    from datetime import datetime
     recettes = Recette.query.filter_by(created_by=current_user.id).all()
-    return render_template('recettes/index.html', recettes=recettes)
+    return render_template('recettes/index.html', recettes=recettes, now=datetime.now())
 
 
 @bp.route('/<int:id>')
@@ -66,6 +67,10 @@ def create():
                 file.save(filepath)
                 photo_url = f"/static/uploads/recettes/{filename}"
 
+        # Récupérer les mois de saison
+        mois_saison_list = request.form.getlist('mois_saison[]')
+        mois_saison_str = ','.join(mois_saison_list) if mois_saison_list else None
+
         # Créer la recette
         recette = Recette(
             nom=nom,
@@ -76,6 +81,7 @@ def create():
             evaluation=evaluation,
             note=note if note else None,
             photo_url=photo_url,
+            mois_saison=mois_saison_str,
             created_by=current_user.id
         )
         db.session.add(recette)
@@ -150,6 +156,10 @@ def edit(id):
         recette.auteur_nom = request.form.get('auteur_nom') or None
         recette.evaluation = request.form.get('evaluation', type=int, default=0)
         recette.note = request.form.get('note') or None
+
+        # Mettre à jour les mois de saison
+        mois_saison_list = request.form.getlist('mois_saison[]')
+        recette.mois_saison = ','.join(mois_saison_list) if mois_saison_list else None
 
         # Gérer l'upload d'une nouvelle photo
         if 'photo' in request.files:
@@ -237,3 +247,159 @@ def delete(id):
     db.session.commit()
     flash('Recette supprimée avec succès', 'success')
     return redirect(url_for('recettes.index'))
+
+
+@bp.route('/api/search')
+@login_required
+def api_search():
+    """
+    API de recherche de recettes avec filtres intelligents
+
+    Paramètres:
+    - q: terme de recherche (nom de recette ou ingrédient)
+    - menu_id: ID du menu (optionnel, pour trier par pertinence)
+    - recettes_menu: IDs de recettes séparées par virgule (pour création de menu)
+    - mois: mois actuel (1-12) pour indicateur de saison
+    - type_repas: type de repas (petit_dejeuner, dejeuner, diner)
+    """
+    from datetime import datetime
+
+    query_term = request.args.get('q', '').strip()
+    menu_id = request.args.get('menu_id', type=int)
+    recettes_menu_str = request.args.get('recettes_menu', '')
+    mois_actuel = request.args.get('mois', datetime.now().month, type=int)
+    type_repas = request.args.get('type_repas', '')
+
+    # Parser les IDs de recettes du menu en cours de création
+    recettes_dans_menu = set()
+    if recettes_menu_str:
+        try:
+            recettes_dans_menu = set(int(id_str.strip()) for id_str in recettes_menu_str.split(',') if id_str.strip())
+        except ValueError:
+            pass
+
+    # Récupérer toutes les recettes de l'utilisateur
+    recettes = Recette.query.filter_by(created_by=current_user.id).all()
+
+    resultats = []
+
+    for recette in recettes:
+        # Filtrer par terme de recherche (nom ou ingrédient)
+        if query_term:
+            match_nom = query_term.lower() in recette.nom.lower()
+            match_ingredient = any(
+                query_term.lower() in ri.ingredient.nom.lower()
+                for ri in recette.ingredients
+            )
+
+            if not (match_nom or match_ingredient):
+                continue
+
+        # Déterminer le statut de saison
+        mois_saison_list = recette.get_mois_saison_list()
+        mois_noms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+        mois_nom_actuel = mois_noms[mois_actuel]
+
+        if not mois_saison_list:
+            statut_saison = 'toute_saison'
+            icone_saison = '🌍'
+            couleur_saison = 'secondary'
+        elif mois_nom_actuel in mois_saison_list:
+            statut_saison = 'de_saison'
+            icone_saison = '🌿'
+            couleur_saison = 'success'
+        else:
+            statut_saison = 'hors_saison'
+            icone_saison = '❄️'
+            couleur_saison = 'warning'
+
+        # Calculer le score de pertinence et les raisons
+        score_pertinence = 0
+        raisons = []
+        ingredients_communs_noms = []
+        nb_communs = 0
+
+        # Récupérer les recettes du menu (soit depuis menu_id, soit depuis recettes_menu)
+        if menu_id:
+            from app.models import Menu, Ingredient
+            menu = Menu.query.get(menu_id)
+            if menu:
+                for jour in menu.jours:
+                    if jour.petit_dejeuner_id:
+                        recettes_dans_menu.add(jour.petit_dejeuner_id)
+                    if jour.dejeuner_id:
+                        recettes_dans_menu.add(jour.dejeuner_id)
+                    if jour.diner_id:
+                        recettes_dans_menu.add(jour.diner_id)
+
+        # Si on a des recettes dans le menu (édition ou création)
+        if recettes_dans_menu:
+            # Recette déjà dans le menu = score élevé
+            if recette.id in recettes_dans_menu:
+                score_pertinence += 1000  # Très haut score
+                raisons.append('Déjà dans le menu')
+
+            # Ingrédients en commun avec les recettes du menu
+            ingredients_menu = set()
+            ingredients_menu_dict = {}  # Pour récupérer les noms
+            for recette_id in recettes_dans_menu:
+                r = Recette.query.get(recette_id)
+                if r:
+                    for ri in r.ingredients:
+                        ingredients_menu.add(ri.ingredient_id)
+                        ingredients_menu_dict[ri.ingredient_id] = ri.ingredient.nom
+
+            ingredients_recette = set(ri.ingredient_id for ri in recette.ingredients)
+            ingredients_communs_ids = ingredients_menu.intersection(ingredients_recette)
+            nb_communs = len(ingredients_communs_ids)
+
+            if nb_communs > 0:
+                score_pertinence += nb_communs * 10
+                # Récupérer les noms des ingrédients communs
+                ingredients_communs_noms = [ingredients_menu_dict[ing_id] for ing_id in ingredients_communs_ids]
+                if nb_communs == 1:
+                    raisons.append(f'1 ingrédient commun: {ingredients_communs_noms[0]}')
+                elif nb_communs <= 3:
+                    raisons.append(f'{nb_communs} ingrédients communs: {", ".join(ingredients_communs_noms)}')
+                else:
+                    raisons.append(f'{nb_communs} ingrédients communs: {", ".join(ingredients_communs_noms[:3])}, ...')
+
+        # Bonus si de saison
+        if statut_saison == 'de_saison':
+            score_pertinence += 50
+        elif statut_saison == 'toute_saison':
+            score_pertinence += 25
+
+        # Bonus si correspond au type de repas
+        if type_repas:
+            type_repas_map = {
+                'petit_dejeuner': 'Petit-déjeuner',
+                'dejeuner': 'Déjeuner',
+                'diner': 'Dîner'
+            }
+            if type_repas_map.get(type_repas) in recette.get_type_repas_list():
+                score_pertinence += 30
+
+        resultats.append({
+            'id': recette.id,
+            'nom': recette.nom,
+            'portions': recette.portions,
+            'temps_total': f"{recette.temps_preparation or '?'} + {recette.temps_cuisson or '?'}",
+            'evaluation': recette.evaluation,
+            'statut_saison': statut_saison,
+            'icone_saison': icone_saison,
+            'couleur_saison': couleur_saison,
+            'mois_saison': ', '.join(mois_saison_list) if mois_saison_list else 'Toute l\'année',
+            'nb_ingredients': recette.ingredients.count(),
+            'score_pertinence': score_pertinence,
+            'raisons': raisons,
+            'est_recommandee': len(raisons) > 0,
+            'nb_ingredients_communs': nb_communs
+        })
+
+    # Trier par pertinence décroissante
+    resultats.sort(key=lambda x: x['score_pertinence'], reverse=True)
+
+    # Limiter à 20 résultats
+    return jsonify(resultats[:20])

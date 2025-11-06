@@ -56,8 +56,16 @@
                 <!-- Phase BROUILLON : Explication du workflow -->
                 {% if liste.statut == 'brouillon' %}
                 <div class="alert alert-info">
-                    <h6><i class="bi bi-info-circle"></i> Phase de vérification</h6>
-                    <p class="mb-0">Vérifiez les quantités nécessaires en comparant avec votre stock. Vous pourrez ajuster les quantités achetées dans le magasin.</p>
+                    <h6><i class="bi bi-info-circle"></i> Phase de brouillon</h6>
+                    <p class="mb-0">Cliquez sur "Réviser la liste" pour vérifier automatiquement votre stock et retirer les articles dont vous n'avez pas besoin.</p>
+                </div>
+                {% endif %}
+
+                <!-- Phase VALIDEE : Explication -->
+                {% if liste.statut == 'validee' %}
+                <div class="alert alert-primary">
+                    <h6><i class="bi bi-eye"></i> Phase de vérification physique</h6>
+                    <p class="mb-0">Vérifiez physiquement votre stock à la maison. Décochez les articles que vous possédez déjà. Une fois prêt, commencez les courses pour aller au magasin.</p>
                 </div>
                 {% endif %}
 
@@ -65,7 +73,7 @@
                 {% if liste.statut == 'en_course' %}
                 <div class="alert alert-warning">
                     <h6><i class="bi bi-cart-fill"></i> En cours de courses</h6>
-                    <p class="mb-0">Saisissez les quantités réellement achetées. Si un article indique "3 œufs" mais que vous achetez une boîte de 6, mettez 6.</p>
+                    <p class="mb-0">Les quantités affichées sont arrondies à l'unité supérieure. Cochez les articles achetés et ajustez les quantités si nécessaire.</p>
                 </div>
                 {% endif %}
 
@@ -73,12 +81,88 @@
                 <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Articles</h2>
 
                 {% if liste.ingredients.count() > 0 %}
+
+                {% if liste.statut == 'en_course' %}
+                <!-- Phase EN_COURSE : Grouper par rayon -->
+                {% set items = liste.ingredients.all() %}
+                {% set items_par_rayon = {} %}
+                {% for item in items %}
+                    {% set rayon_nom = item.rayon if item.rayon else 'Autre' %}
+                    {% if rayon_nom not in items_par_rayon %}
+                        {% set _ = items_par_rayon.update({rayon_nom: []}) %}
+                    {% endif %}
+                    {% set _ = items_par_rayon[rayon_nom].append(item) %}
+                {% endfor %}
+
+                {% for rayon, items_rayon in items_par_rayon.items() %}
+                <div class="mb-4">
+                    <h5 class="text-warning">
+                        <i class="bi bi-shop"></i> {{ rayon }} ({{ items_rayon|length }})
+                    </h5>
+                    <form id="updateForm_{{ loop.index }}">
+                        <ul class="list-group">
+                            {% for item in items_rayon %}
+                            <li class="list-group-item">
+                              <div class="row align-items-center">
+                                    <!-- Checkbox -->
+                                    <div class="col-auto">
+                                        <div class="form-check">
+                                            <input class="form-check-input ingredient-checkbox"
+                                                   type="checkbox"
+                                                   value="{{ item.id }}"
+                                                   id="ingredient_{{ item.id }}"
+                                                   {% if item.achete %}checked{% endif %}
+                                                   onchange="toggleIngredient({{ item.id }}, this.checked)">
+                                        </div>
+                                    </div>
+
+                                    <!-- Nom et quantités -->
+                                    <div class="col">
+                                        <label class="form-check-label w-100 {% if item.achete %}text-decoration-line-through text-muted{% endif %}"
+                                               for="ingredient_{{ item.id }}"
+                                               id="label_{{ item.id }}">
+
+                                            <!-- Nom de l'ingrédient -->
+                                            <strong>{{ item.nom_ingredient }}</strong>
+                                            <br>
+
+                                            <!-- Quantité arrondie -->
+                                            <small class="text-muted">
+                                                À acheter : <strong class="text-primary">{{ item.get_affichage_quantite() }}</strong>
+                                            </small>
+
+                                            <!-- Quantité achetée éditable -->
+                                            <br>
+                                            <div class="input-group input-group-sm mt-2" style="max-width: 300px;">
+                                                <span class="input-group-text">Achetée :</span>
+                                                <input type="number"
+                                                       class="form-control"
+                                                       id="qte_{{ item.id }}"
+                                                       value="{{ item.quantite_achetee if item.quantite_achetee is not none else item.quantite }}"
+                                                       step="0.1"
+                                                       min="0"
+                                                       onchange="updateQuantite({{ item.id }}, this.value)">
+                                                <span class="input-group-text">{{ item.unite }}</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </form>
+                </div>
+                {% endfor %}
+
+                {% else %}
+                <!-- Autres phases : Liste simple sans groupement -->
                 <form id="updateForm">
                     <ul class="list-group">
                         {% for item in liste.ingredients.all() %}
                         <li class="list-group-item">
-                            <div class="row align-items-center">
-                                <!-- Checkbox -->
+                          <div class="row align-items-center">
+                                <!-- Checkbox (uniquement si terminee pour affichage) -->
+                                {% if liste.statut == 'terminee' and item.achete %}
                                 <div class="col-auto">
                                     <div class="form-check">
                                         <input class="form-check-input ingredient-checkbox"
@@ -86,10 +170,10 @@
                                                value="{{ item.id }}"
                                                id="ingredient_{{ item.id }}"
                                                {% if item.achete %}checked{% endif %}
-                                               {% if liste.statut not in ['en_course', 'validee'] %}disabled{% endif %}
                                                onchange="toggleIngredient({{ item.id }}, this.checked)">
                                     </div>
                                 </div>
+                                {% endif %}
 
                                 <!-- Nom et quantités -->
                                 <div class="col">
@@ -108,25 +192,13 @@
                                         <br>
 
                                         <!-- Quantité nécessaire (toujours affichée) -->
+
                                         <small class="text-muted">
-                                            Nécessaire : {{ item.quantite }} {{ item.unite }}
+                                            Nécessaire : {{ item.get_affichage_quantite() }}
                                         </small>
 
-                                        <!-- Phase EN_COURSE : Quantité achetée éditable -->
-                                        {% if liste.statut == 'en_course' %}
-                                        <br>
-                                        <div class="input-group input-group-sm mt-2" style="max-width: 300px;">
-                                            <span class="input-group-text">Achetée :</span>
-                                            <input type="number"
-                                                   class="form-control"
-                                                   id="qte_{{ item.id }}"
-                                                   value="{{ item.quantite_achetee if item.quantite_achetee is not none else item.quantite }}"
-                                                   step="0.1"
-                                                   min="0"
-                                                   onchange="updateQuantite({{ item.id }}, this.value)">
-                                            <span class="input-group-text">{{ item.unite }}</span>
-                                        </div>
-                                        {% elif liste.statut == 'terminee' and item.quantite_achetee is not none %}
+                                        <!-- Phase TERMINEE : Afficher quantité achetée -->
+                                        {% if liste.statut == 'terminee' and item.quantite_achetee is not none %}
                                         <br>
                                         <small class="text-success">
                                             <i class="bi bi-check-circle"></i> Acheté : {{ item.quantite_achetee }} {{ item.unite }}
@@ -140,6 +212,8 @@
                         {% endfor %}
                     </ul>
                 </form>
+                {% endif %}
+
                 {% else %}
                 <p class="text-muted">Aucun ingrédient dans cette liste</p>
                 {% endif %}
@@ -153,20 +227,16 @@
                 <h5 class="card-title">Actions</h5>
                 <div class="d-grid gap-2">
                     {% if liste.statut == 'brouillon' %}
-                    <form method="POST" action="{{ url_for('courses.valider', id=liste.id) }}">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-check-circle"></i> Valider la liste
-                        </button>
-                    </form>
-                    <small class="text-muted">Validez quand la liste est prête</small>
+                    <a href="{{ url_for('courses.reviser', id=liste.id) }}" class="btn btn-primary w-100">
+                        <i class="bi bi-clipboard-check"></i> Réviser la liste
+                    </a>
+                    <small class="text-muted">Vérifiez votre stock avant de valider</small>
 
                     {% elif liste.statut == 'validee' %}
-                    <form method="POST" action="{{ url_for('courses.commencer', id=liste.id) }}">
-                        <button type="submit" class="btn btn-warning w-100">
-                            <i class="bi bi-cart-fill"></i> Commencer les courses
-                        </button>
-                    </form>
-                    <small class="text-muted">Démarrez quand vous êtes au magasin</small>
+                    <a href="{{ url_for('courses.verifier', id=liste.id) }}" class="btn btn-primary w-100">
+                        <i class="bi bi-eye"></i> Vérifier physiquement
+                    </a>
+                    <small class="text-muted">Vérifiez votre stock à la maison</small>
 
                     {% elif liste.statut == 'en_course' %}
                     <form method="POST" action="{{ url_for('courses.confirmer', id=liste.id) }}">
@@ -223,16 +293,16 @@
                 <h6 class="mt-3">Workflow :</h6>
                 <ol class="small">
                     <li class="{% if liste.statut == 'brouillon' %}text-primary fw-bold{% elif liste.statut in ['validee', 'en_course', 'terminee'] %}text-success{% endif %}">
-                        Brouillon - Vérification
+                        <i class="bi bi-clipboard-check"></i> Révision (stock app)
                     </li>
                     <li class="{% if liste.statut == 'validee' %}text-primary fw-bold{% elif liste.statut in ['en_course', 'terminee'] %}text-success{% endif %}">
-                        Validée - Prête
+                        <i class="bi bi-eye"></i> Vérification physique
                     </li>
                     <li class="{% if liste.statut == 'en_course' %}text-warning fw-bold{% elif liste.statut == 'terminee' %}text-success{% endif %}">
-                        En cours - Au magasin
+                        <i class="bi bi-cart"></i> Courses au magasin
                     </li>
                     <li class="{% if liste.statut == 'terminee' %}text-success fw-bold{% endif %}">
-                        Terminée - Stock mis à jour
+                        <i class="bi bi-check2-all"></i> Finalisation
                     </li>
                 </ol>
             </div>

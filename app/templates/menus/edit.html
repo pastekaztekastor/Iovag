@@ -2,6 +2,10 @@
 
 {% block title %}Modifier {{ menu.nom }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/recipe-search.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col">
@@ -69,43 +73,43 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-4 mb-2">
-                                    <label for="jour_{{ i }}_petit_dejeuner" class="form-label">
+                                    <label for="search_jour_{{ i }}_petit_dejeuner" class="form-label">
                                         <i class="bi bi-sunrise"></i> Petit-déjeuner
                                     </label>
-                                    <select class="form-select" id="jour_{{ i }}_petit_dejeuner" name="jour_{{ i }}_petit_dejeuner">
-                                        <option value="">-- Aucun --</option>
-                                        {% for recette in recettes %}
-                                        <option value="{{ recette.id }}" {% if jour and jour.petit_dejeuner_id == recette.id %}selected{% endif %}>
-                                            {{ recette.nom }} ({{ recette.portions }} portions)
-                                        </option>
-                                        {% endfor %}
-                                    </select>
+                                    <input type="text"
+                                           class="form-control recipe-search-input"
+                                           id="search_jour_{{ i }}_petit_dejeuner"
+                                           placeholder="Rechercher...">
+                                    <input type="hidden"
+                                           id="jour_{{ i }}_petit_dejeuner"
+                                           name="jour_{{ i }}_petit_dejeuner"
+                                           value="{{ jour.petit_dejeuner_id if jour and jour.petit_dejeuner_id else '' }}">
                                 </div>
                                 <div class="col-md-4 mb-2">
-                                    <label for="jour_{{ i }}_dejeuner" class="form-label">
+                                    <label for="search_jour_{{ i }}_dejeuner" class="form-label">
                                         <i class="bi bi-sun"></i> Déjeuner
                                     </label>
-                                    <select class="form-select" id="jour_{{ i }}_dejeuner" name="jour_{{ i }}_dejeuner">
-                                        <option value="">-- Aucun --</option>
-                                        {% for recette in recettes %}
-                                        <option value="{{ recette.id }}" {% if jour and jour.dejeuner_id == recette.id %}selected{% endif %}>
-                                            {{ recette.nom }} ({{ recette.portions }} portions)
-                                        </option>
-                                        {% endfor %}
-                                    </select>
+                                    <input type="text"
+                                           class="form-control recipe-search-input"
+                                           id="search_jour_{{ i }}_dejeuner"
+                                           placeholder="Rechercher...">
+                                    <input type="hidden"
+                                           id="jour_{{ i }}_dejeuner"
+                                           name="jour_{{ i }}_dejeuner"
+                                           value="{{ jour.dejeuner_id if jour and jour.dejeuner_id else '' }}">
                                 </div>
                                 <div class="col-md-4 mb-2">
-                                    <label for="jour_{{ i }}_diner" class="form-label">
+                                    <label for="search_jour_{{ i }}_diner" class="form-label">
                                         <i class="bi bi-moon-stars"></i> Dîner
                                     </label>
-                                    <select class="form-select" id="jour_{{ i }}_diner" name="jour_{{ i }}_diner">
-                                        <option value="">-- Aucun --</option>
-                                        {% for recette in recettes %}
-                                        <option value="{{ recette.id }}" {% if jour and jour.diner_id == recette.id %}selected{% endif %}>
-                                            {{ recette.nom }} ({{ recette.portions }} portions)
-                                        </option>
-                                        {% endfor %}
-                                    </select>
+                                    <input type="text"
+                                           class="form-control recipe-search-input"
+                                           id="search_jour_{{ i }}_diner"
+                                           placeholder="Rechercher...">
+                                    <input type="hidden"
+                                           id="jour_{{ i }}_diner"
+                                           name="jour_{{ i }}_diner"
+                                           value="{{ jour.diner_id if jour and jour.diner_id else '' }}">
                                 </div>
                             </div>
                         </div>
@@ -128,4 +132,36 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/recipe-search.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser les composants de recherche pour chaque jour et repas
+    const repasTypes = {
+        'petit_dejeuner': 'petit_dejeuner',
+        'dejeuner': 'dejeuner',
+        'diner': 'diner'
+    };
+
+    for (let jour = 0; jour < 7; jour++) {
+        for (const [repasKey, repasType] of Object.entries(repasTypes)) {
+            const searchInputId = `search_jour_${jour}_${repasKey}`;
+            const hiddenInputId = `jour_${jour}_${repasKey}`;
+            const hiddenInput = document.getElementById(hiddenInputId);
+
+            const searchInstance = new RecipeSearch(searchInputId, hiddenInputId, {
+                menuId: {{ menu.id }},
+                typeRepas: repasType,
+                currentRecipeId: hiddenInput && hiddenInput.value ? parseInt(hiddenInput.value) : null,
+                placeholder: 'Rechercher une recette ou un ingrédient...'
+            });
+
+            // Stocker l'instance globalement
+            window.recipeSearchInstances[searchInputId] = searchInstance;
+        }
+    }
+});
+</script>
 {% endblock %}
