@@ -65,20 +65,6 @@
                         </div>
                     </div>
 
-                    {% if recette.photo_url %}
-                    <div class="mb-3">
-                        <label class="form-label">Photo actuelle</label>
-                        <div>
-                            <img src="{{ recette.photo_url }}" alt="{{ recette.nom }}" class="img-thumbnail" style="max-height: 200px;">
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <div class="mb-3">
-                        <label for="photo" class="form-label">Nouvelle photo</label>
-                        <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
-                    </div>
-
                     <div class="mb-4">
                         <label for="note" class="form-label">Notes personnelles</label>
                         <textarea class="form-control" id="note" name="note" rows="3">{{ recette.note or '' }}</textarea>
@@ -104,6 +90,25 @@
                         <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="auto-calculate-mois">
                             <i class="bi bi-magic"></i> Calculer automatiquement
                         </button>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Type de repas</label>
+                        <p class="text-muted small">Sélectionnez pour quel(s) type(s) de repas cette recette est adaptée.</p>
+                        <div class="row">
+                            {% set types_repas = ['Petit-déjeuner', 'Déjeuner', 'Goûter', 'Dîner'] %}
+                            {% set types_existants = recette.get_type_repas_list() %}
+                            {% for type in types_repas %}
+                            <div class="col-md-3 col-sm-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="type_repas[]" value="{{ type }}" id="type_{{ loop.index }}" {% if type in types_existants %}checked{% endif %}>
+                                    <label class="form-check-label" for="type_{{ loop.index }}">
+                                        {{ type }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
 
                     <hr>

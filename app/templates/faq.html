@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}FAQ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <h1 class="display-4 mb-4">
+            <i class="bi bi-question-circle text-primary"></i> Foire Aux Questions
+        </h1>
+
+        <p class="lead mb-5">
+            Vous trouverez ici les réponses aux questions les plus fréquemment posées.
+        </p>
+
+        <!-- Général -->
+        <section class="mb-5">
+            <h2 class="h3 mb-4 text-primary">
+                <i class="bi bi-info-circle"></i> Général
+            </h2>
+            <div class="accordion" id="accordionGeneral">
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#general1">
+                            Qu'est-ce qu'Iovag ?
+                        </button>
+                    </h3>
+                    <div id="general1" class="accordion-collapse collapse show" data-bs-parent="#accordionGeneral">
+                        <div class="accordion-body">
+                            Iovag est une plateforme gratuite de gestion culinaire qui vous permet de gérer vos recettes,
+                            planifier vos menus hebdomadaires et générer automatiquement vos listes de courses.
+                            L'objectif est de simplifier votre quotidien en cuisine et de réduire le gaspillage alimentaire.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#general2">
+                            Iovag est-il vraiment gratuit ?
+                        </button>
+                    </h3>
+                    <div id="general2" class="accordion-collapse collapse" data-bs-parent="#accordionGeneral">
+                        <div class="accordion-body">
+                            Oui, absolument ! Iovag est et restera toujours 100% gratuit. Il n'y a aucun frais caché,
+                            aucun abonnement et aucune carte bancaire n'est requise. Toutes les fonctionnalités sont
+                            accessibles gratuitement à tous les utilisateurs.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#general3">
+                            Mes données sont-elles sécurisées ?
+                        </button>
+                    </h3>
+                    <div id="general3" class="accordion-collapse collapse" data-bs-parent="#accordionGeneral">
+                        <div class="accordion-body">
+                            Oui ! Vos données sont stockées de manière sécurisée et ne sont jamais partagées avec des tiers.
+                            Nous respectons votre vie privée et vous gardez le contrôle total de vos informations.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recettes -->
+        <section class="mb-5">
+            <h2 class="h3 mb-4 text-success">
+                <i class="bi bi-book"></i> Recettes
+            </h2>
+            <div class="accordion" id="accordionRecettes">
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#recette1">
+                            Comment créer une recette ?
+                        </button>
+                    </h3>
+                    <div id="recette1" class="accordion-collapse collapse" data-bs-parent="#accordionRecettes">
+                        <div class="accordion-body">
+                            Une fois connecté, allez dans "Mes Recettes" puis cliquez sur "Nouvelle recette".
+                            Remplissez le formulaire avec le nom, les ingrédients, les instructions et d'autres détails.
+                            Vous pouvez également évaluer vos recettes et les filtrer par type de repas ou saison.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#recette2">
+                            Puis-je partager mes recettes avec d'autres utilisateurs ?
+                        </button>
+                    </h3>
+                    <div id="recette2" class="accordion-collapse collapse" data-bs-parent="#accordionRecettes">
+                        <div class="accordion-body">
+                            Cette fonctionnalité est en cours de développement ! Bientôt, vous pourrez partager vos
+                            recettes favorites avec la communauté Iovag et découvrir celles des autres cuisiniers.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#recette3">
+                            Comment gérer les portions ?
+                        </button>
+                    </h3>
+                    <div id="recette3" class="accordion-collapse collapse" data-bs-parent="#accordionRecettes">
+                        <div class="accordion-body">
+                            Lors de la création d'une recette, indiquez le nombre de portions. Quand vous ajoutez
+                            la recette à un menu, vous pouvez ajuster le nombre de personnes et les quantités
+                            d'ingrédients seront automatiquement recalculées pour votre liste de courses.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Menus -->
+        <section class="mb-5">
+            <h2 class="h3 mb-4 text-info">
+                <i class="bi bi-calendar-week"></i> Menus
+            </h2>
+            <div class="accordion" id="accordionMenus">
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu1">
+                            Comment planifier mes menus ?
+                        </button>
+                    </h3>
+                    <div id="menu1" class="accordion-collapse collapse" data-bs-parent="#accordionMenus">
+                        <div class="accordion-body">
+                            Allez dans "Mes Menus" puis "Créer un menu". Définissez la période (dates de début et fin),
+                            le nombre de personnes, puis ajoutez des recettes pour chaque jour. Vous pouvez planifier
+                            le petit-déjeuner, déjeuner, goûter et dîner.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#menu2">
+                            Puis-je modifier un menu après sa création ?
+                        </button>
+                    </h3>
+                    <div id="menu2" class="accordion-collapse collapse" data-bs-parent="#accordionMenus">
+                        <div class="accordion-body">
+                            Oui ! Vous pouvez modifier vos menus à tout moment. Accédez au menu depuis "Mes Menus",
+                            puis cliquez sur "Modifier" pour ajuster les recettes, le nombre de personnes ou les dates.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Liste de courses -->
+        <section class="mb-5">
+            <h2 class="h3 mb-4 text-warning">
+                <i class="bi bi-cart"></i> Liste de Courses
+            </h2>
+            <div class="accordion" id="accordionCourses">
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#courses1">
+                            Comment générer ma liste de courses ?
+                        </button>
+                    </h3>
+                    <div id="courses1" class="accordion-collapse collapse" data-bs-parent="#accordionCourses">
+                        <div class="accordion-body">
+                            Une fois votre menu créé, cliquez sur "Générer la liste de courses". Iovag calcule
+                            automatiquement toutes les quantités nécessaires pour tous les repas du menu, en tenant
+                            compte du nombre de personnes et de vos stocks existants.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#courses2">
+                            La liste prend-elle en compte mon stock ?
+                        </button>
+                    </h3>
+                    <div id="courses2" class="accordion-collapse collapse" data-bs-parent="#accordionCourses">
+                        <div class="accordion-body">
+                            Oui ! Si vous maintenez votre stock à jour dans "Mon Stock", Iovag déduit automatiquement
+                            les quantités que vous avez déjà et ne met sur la liste que ce qu'il vous faut acheter.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#courses3">
+                            Puis-je modifier la liste de courses ?
+                        </button>
+                    </h3>
+                    <div id="courses3" class="accordion-collapse collapse" data-bs-parent="#accordionCourses">
+                        <div class="accordion-body">
+                            Oui ! Vous pouvez ajouter, modifier ou supprimer des articles de votre liste. Vous pouvez
+                            également cocher les articles au fur et à mesure de vos courses.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stock -->
+        <section class="mb-5">
+            <h2 class="h3 mb-4 text-danger">
+                <i class="bi bi-box-seam"></i> Gestion de Stock
+            </h2>
+            <div class="accordion" id="accordionStock">
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#stock1">
+                            Comment gérer mon stock d'ingrédients ?
+                        </button>
+                    </h3>
+                    <div id="stock1" class="accordion-collapse collapse" data-bs-parent="#accordionStock">
+                        <div class="accordion-body">
+                            Dans "Mon Stock", vous pouvez voir tous vos ingrédients et leurs quantités actuelles.
+                            Mettez à jour les quantités après vos courses ou quand vous utilisez des ingrédients.
+                            Le système vous alertera quand un stock devient faible.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#stock2">
+                            Le stock se met-il à jour automatiquement ?
+                        </button>
+                    </h3>
+                    <div id="stock2" class="accordion-collapse collapse" data-bs-parent="#accordionStock">
+                        <div class="accordion-body">
+                            Lorsque vous validez une liste de courses, vous pouvez mettre à jour automatiquement
+                            le stock avec les quantités achetées. Cependant, il est recommandé de vérifier et
+                            ajuster manuellement votre stock régulièrement.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Support -->
+        <section class="mb-5">
+            <div class="card bg-light">
+                <div class="card-body text-center py-5">
+                    <h2 class="h3 mb-4">Vous ne trouvez pas la réponse à votre question ?</h2>
+                    <p class="lead mb-4">
+                        N'hésitez pas à nous contacter, nous serons ravis de vous aider !
+                    </p>
+                    <a href="{{ url_for('main.contact') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-envelope"></i> Nous contacter
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

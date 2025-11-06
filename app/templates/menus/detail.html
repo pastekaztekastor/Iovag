@@ -63,7 +63,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <h6 class="text-muted"><i class="bi bi-sunrise"></i> Petit-déjeuner</h6>
                                 {% if jour and jour.petit_dejeuner_recette %}
                                 <a href="{{ url_for('recettes.detail', id=jour.petit_dejeuner_id) }}">
@@ -73,7 +73,7 @@
                                 <p class="text-muted"><small>Non défini</small></p>
                                 {% endif %}
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <h6 class="text-muted"><i class="bi bi-sun"></i> Déjeuner</h6>
                                 {% if jour and jour.dejeuner_recette %}
                                 <a href="{{ url_for('recettes.detail', id=jour.dejeuner_id) }}">
@@ -83,7 +83,17 @@
                                 <p class="text-muted"><small>Non défini</small></p>
                                 {% endif %}
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <h6 class="text-muted"><i class="bi bi-cup-straw"></i> Goûter</h6>
+                                {% if jour and jour.gouter_recette %}
+                                <a href="{{ url_for('recettes.detail', id=jour.gouter_id) }}">
+                                    {{ jour.gouter_recette.nom }}
+                                </a>
+                                {% else %}
+                                <p class="text-muted"><small>Non défini</small></p>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
                                 <h6 class="text-muted"><i class="bi bi-moon-stars"></i> Dîner</h6>
                                 {% if jour and jour.diner_recette %}
                                 <a href="{{ url_for('recettes.detail', id=jour.diner_id) }}">

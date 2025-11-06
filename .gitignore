@@ -58,3 +58,23 @@ htmlcov/
 # PDF generated files
 *.pdf
 uploads/
+
+# Deployment files (contiennent des infos spécifiques au serveur)
+.env.production
+raspberry_setup.sh
+iovag.service
+nginx_iovag.conf
+ngrok.service
+deploy.sh
+
+# Documentation temporaire
+CLAUDE.md
+TODO.md
+recette.txt
+/templates/
+
+# Scripts d'import spécifiques
+import_data.py
+import_recettes.py
+convert_to_pieces.py
+set_poids_estimes.py

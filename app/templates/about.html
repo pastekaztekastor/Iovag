@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Qui sommes-nous{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <h1 class="display-4 mb-4">
+            <i class="bi bi-info-circle text-primary"></i> Qui sommes-nous
+        </h1>
+
+        <section class="mb-5">
+            <h2 class="h3 mb-3">Notre Histoire</h2>
+            <p class="lead">
+                Iovag est né d'une simple observation : trop souvent, nous nous retrouvons devant
+                le frigo en nous demandant "qu'est-ce qu'on mange ce soir ?", pour finir par
+                improviser des courses et gaspiller de la nourriture.
+            </p>
+            <p>
+                C'est de ce constat qu'est née l'idée d'Iovag : créer un outil simple, gratuit
+                et accessible à tous pour organiser ses repas, gérer ses recettes et simplifier
+                ses courses. Plus qu'une simple application, Iovag est une philosophie de vie
+                qui prône l'organisation, la réduction du gaspillage et le plaisir de cuisiner.
+            </p>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="h3 mb-3">Notre Mission</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-lightbulb text-warning"></i> Simplifier le quotidien
+                            </h5>
+                            <p class="card-text">
+                                Nous voulons vous libérer du stress de la planification des repas
+                                en vous offrant des outils simples et efficaces.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-success">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-recycle text-success"></i> Réduire le gaspillage
+                            </h5>
+                            <p class="card-text">
+                                En planifiant vos repas et en gérant votre stock, vous achetez
+                                juste ce qu'il faut et réduisez le gaspillage alimentaire.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-info">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-heart text-danger"></i> Redécouvrir le plaisir
+                            </h5>
+                            <p class="card-text">
+                                Cuisiner ne doit pas être une corvée. Nous voulons vous aider
+                                à retrouver le plaisir de préparer de bons repas.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-gift text-primary"></i> Rester accessible
+                            </h5>
+                            <p class="card-text">
+                                Iovag est et restera toujours 100% gratuit. Tout le monde
+                                mérite d'avoir accès à ces outils.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="h3 mb-3">Nos Valeurs</h2>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <strong>Gratuité</strong> : Aucun frais caché, aucun abonnement
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <strong>Simplicité</strong> : Une interface intuitive et facile à utiliser
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <strong>Respect de la vie privée</strong> : Vos données vous appartiennent
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <strong>Communauté</strong> : Partage et entraide entre utilisateurs
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <strong>Transparence</strong> : Code open source et développement ouvert
+                </li>
+            </ul>
+        </section>
+
+        <section class="mb-5">
+            <div class="card bg-light">
+                <div class="card-body text-center py-5">
+                    <h2 class="h3 mb-4">Rejoignez l'aventure Iovag</h2>
+                    <p class="lead mb-4">
+                        Que vous soyez un cuisinier débutant ou confirmé, Iovag est fait pour vous.
+                    </p>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-person-plus"></i> Créer mon compte gratuitement
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

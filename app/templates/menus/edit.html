@@ -72,7 +72,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-md-4 mb-2">
+                                <div class="col-md-3 mb-2">
                                     <label for="search_jour_{{ i }}_petit_dejeuner" class="form-label">
                                         <i class="bi bi-sunrise"></i> Petit-déjeuner
                                     </label>
@@ -85,7 +85,7 @@
                                            name="jour_{{ i }}_petit_dejeuner"
                                            value="{{ jour.petit_dejeuner_id if jour and jour.petit_dejeuner_id else '' }}">
                                 </div>
-                                <div class="col-md-4 mb-2">
+                                <div class="col-md-3 mb-2">
                                     <label for="search_jour_{{ i }}_dejeuner" class="form-label">
                                         <i class="bi bi-sun"></i> Déjeuner
                                     </label>
@@ -98,7 +98,20 @@
                                            name="jour_{{ i }}_dejeuner"
                                            value="{{ jour.dejeuner_id if jour and jour.dejeuner_id else '' }}">
                                 </div>
-                                <div class="col-md-4 mb-2">
+                                <div class="col-md-3 mb-2">
+                                    <label for="search_jour_{{ i }}_gouter" class="form-label">
+                                        <i class="bi bi-cup-straw"></i> Goûter
+                                    </label>
+                                    <input type="text"
+                                           class="form-control recipe-search-input"
+                                           id="search_jour_{{ i }}_gouter"
+                                           placeholder="Rechercher...">
+                                    <input type="hidden"
+                                           id="jour_{{ i }}_gouter"
+                                           name="jour_{{ i }}_gouter"
+                                           value="{{ jour.gouter_id if jour and jour.gouter_id else '' }}">
+                                </div>
+                                <div class="col-md-3 mb-2">
                                     <label for="search_jour_{{ i }}_diner" class="form-label">
                                         <i class="bi bi-moon-stars"></i> Dîner
                                     </label>
@@ -142,6 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const repasTypes = {
         'petit_dejeuner': 'petit_dejeuner',
         'dejeuner': 'dejeuner',
+        'gouter': 'gouter',
         'diner': 'diner'
     };
 

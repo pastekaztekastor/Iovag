@@ -28,5 +28,17 @@ def index():
 
 @bp.route('/about')
 def about():
-    """Page à propos"""
+    """Page Qui sommes-nous"""
     return render_template('about.html')
+
+
+@bp.route('/faq')
+def faq():
+    """Page FAQ"""
+    return render_template('faq.html')
+
+
+@bp.route('/contact')
+def contact():
+    """Page Contact"""
+    return render_template('contact.html')

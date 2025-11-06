@@ -58,15 +58,17 @@ def create():
         for jour in range(7):
             petit_dejeuner_id = request.form.get(f'jour_{jour}_petit_dejeuner')
             dejeuner_id = request.form.get(f'jour_{jour}_dejeuner')
+            gouter_id = request.form.get(f'jour_{jour}_gouter')
             diner_id = request.form.get(f'jour_{jour}_diner')
 
             # Créer le MenuJour seulement s'il y a au moins un repas
-            if petit_dejeuner_id or dejeuner_id or diner_id:
+            if petit_dejeuner_id or dejeuner_id or gouter_id or diner_id:
                 menu_jour = MenuJour(
                     menu_id=menu.id,
                     jour_semaine=jour,
                     petit_dejeuner_id=int(petit_dejeuner_id) if petit_dejeuner_id else None,
                     dejeuner_id=int(dejeuner_id) if dejeuner_id else None,
+                    gouter_id=int(gouter_id) if gouter_id else None,
                     diner_id=int(diner_id) if diner_id else None
                 )
                 db.session.add(menu_jour)
@@ -107,15 +109,17 @@ def edit(id):
         for jour in range(7):
             petit_dejeuner_id = request.form.get(f'jour_{jour}_petit_dejeuner')
             dejeuner_id = request.form.get(f'jour_{jour}_dejeuner')
+            gouter_id = request.form.get(f'jour_{jour}_gouter')
             diner_id = request.form.get(f'jour_{jour}_diner')
 
             # Créer le MenuJour seulement s'il y a au moins un repas
-            if petit_dejeuner_id or dejeuner_id or diner_id:
+            if petit_dejeuner_id or dejeuner_id or gouter_id or diner_id:
                 menu_jour = MenuJour(
                     menu_id=menu.id,
                     jour_semaine=jour,
                     petit_dejeuner_id=int(petit_dejeuner_id) if petit_dejeuner_id else None,
                     dejeuner_id=int(dejeuner_id) if dejeuner_id else None,
+                    gouter_id=int(gouter_id) if gouter_id else None,
                     diner_id=int(diner_id) if diner_id else None
                 )
                 db.session.add(menu_jour)

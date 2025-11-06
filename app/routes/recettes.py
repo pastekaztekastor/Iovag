@@ -1,20 +1,12 @@
 """
 Routes pour la gestion des recettes
 """
-import os
-from werkzeug.utils import secure_filename
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app import db
 from app.models import Recette, Ingredient, RecetteIngredient, Instruction
 
 bp = Blueprint('recettes', __name__, url_prefix='/recettes')
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-
-def allowed_file(filename):
-    """Vérifier si l'extension du fichier est autorisée"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @bp.route('/')
@@ -48,28 +40,13 @@ def create():
         evaluation = request.form.get('evaluation', type=int, default=0)
         note = request.form.get('note')
 
-        # Gérer l'upload de la photo
-        photo_url = None
-        if 'photo' in request.files:
-            file = request.files['photo']
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Créer un nom unique avec timestamp
-                from datetime import datetime
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{timestamp}_{filename}"
-
-                # Créer le dossier uploads s'il n'existe pas
-                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'recettes')
-                os.makedirs(upload_folder, exist_ok=True)
-
-                filepath = os.path.join(upload_folder, filename)
-                file.save(filepath)
-                photo_url = f"/static/uploads/recettes/{filename}"
-
         # Récupérer les mois de saison
         mois_saison_list = request.form.getlist('mois_saison[]')
         mois_saison_str = ','.join(mois_saison_list) if mois_saison_list else None
+
+        # Récupérer les types de repas
+        type_repas_list = request.form.getlist('type_repas[]')
+        type_repas_str = ','.join(type_repas_list) if type_repas_list else None
 
         # Créer la recette
         recette = Recette(
@@ -80,8 +57,8 @@ def create():
             auteur_nom=auteur_nom if auteur_nom else None,
             evaluation=evaluation,
             note=note if note else None,
-            photo_url=photo_url,
             mois_saison=mois_saison_str,
+            type_repas=type_repas_str,
             created_by=current_user.id
         )
         db.session.add(recette)
@@ -161,21 +138,9 @@ def edit(id):
         mois_saison_list = request.form.getlist('mois_saison[]')
         recette.mois_saison = ','.join(mois_saison_list) if mois_saison_list else None
 
-        # Gérer l'upload d'une nouvelle photo
-        if 'photo' in request.files:
-            file = request.files['photo']
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                from datetime import datetime
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{timestamp}_{filename}"
-
-                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'recettes')
-                os.makedirs(upload_folder, exist_ok=True)
-
-                filepath = os.path.join(upload_folder, filename)
-                file.save(filepath)
-                recette.photo_url = f"/static/uploads/recettes/{filename}"
+        # Mettre à jour les types de repas
+        type_repas_list = request.form.getlist('type_repas[]')
+        recette.type_repas = ','.join(type_repas_list) if type_repas_list else None
 
         # Supprimer les ingrédients existants
         RecetteIngredient.query.filter_by(recette_id=recette.id).delete()
@@ -330,6 +295,8 @@ def api_search():
                         recettes_dans_menu.add(jour.petit_dejeuner_id)
                     if jour.dejeuner_id:
                         recettes_dans_menu.add(jour.dejeuner_id)
+                    if jour.gouter_id:
+                        recettes_dans_menu.add(jour.gouter_id)
                     if jour.diner_id:
                         recettes_dans_menu.add(jour.diner_id)
 
@@ -376,6 +343,7 @@ def api_search():
             type_repas_map = {
                 'petit_dejeuner': 'Petit-déjeuner',
                 'dejeuner': 'Déjeuner',
+                'gouter': 'Goûter',
                 'diner': 'Dîner'
             }
             if type_repas_map.get(type_repas) in recette.get_type_repas_list():

@@ -237,7 +237,6 @@ class Recette(db.Model):
     evaluation = db.Column(db.Integer, default=0)  # 0-5 étoiles
     auteur_nom = db.Column(db.String(100))  # Nom de l'auteur de la recette
     note = db.Column(db.Text)  # Notes personnelles
-    photo_url = db.Column(db.String(255))
     mois_saison = db.Column(db.String(200))  # Mois de saison basés sur les ingrédients (format: "Janvier,Février,Mars")
     type_repas = db.Column(db.String(200))  # Type de repas (format: "Petit-déjeuner,Déjeuner,Goûter,Dîner")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -410,7 +409,7 @@ class Menu(db.Model):
 
         # Parcourir tous les jours et tous les repas
         for jour in self.jours:
-            for repas_type in ['petit_dejeuner', 'dejeuner', 'diner']:
+            for repas_type in ['petit_dejeuner', 'dejeuner', 'gouter', 'diner']:
                 recette = getattr(jour, f'{repas_type}_recette', None)
                 if recette:
                     # Calculer les ingrédients ajustés pour le nombre de personnes du menu
@@ -470,11 +469,13 @@ class MenuJour(db.Model):
     # Recettes pour chaque repas (nullable car tous les repas ne sont pas toujours planifiés)
     petit_dejeuner_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
     dejeuner_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
+    gouter_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
     diner_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=True)
 
     # Relations
     petit_dejeuner_recette = db.relationship('Recette', foreign_keys=[petit_dejeuner_id])
     dejeuner_recette = db.relationship('Recette', foreign_keys=[dejeuner_id])
+    gouter_recette = db.relationship('Recette', foreign_keys=[gouter_id])
     diner_recette = db.relationship('Recette', foreign_keys=[diner_id])
 
     @property

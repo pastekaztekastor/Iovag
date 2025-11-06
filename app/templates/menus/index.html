@@ -65,7 +65,7 @@
 
                 <p class="card-text">
                     <small class="text-muted">
-                        {% set nb_recettes = menu.jours|selectattr('petit_dejeuner_id')|list|length + menu.jours|selectattr('dejeuner_id')|list|length + menu.jours|selectattr('diner_id')|list|length %}
+                        {% set nb_recettes = menu.jours|selectattr('petit_dejeuner_id')|list|length + menu.jours|selectattr('dejeuner_id')|list|length + menu.jours|selectattr('gouter_id')|list|length + menu.jours|selectattr('diner_id')|list|length %}
                         <i class="bi bi-book"></i> {{ nb_recettes }} repas planifiés
                     </small>
                 </p>

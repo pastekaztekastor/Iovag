@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Nous contacter{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="display-4 mb-4">
+            <i class="bi bi-envelope text-primary"></i> Nous contacter
+        </h1>
+
+        <div class="alert alert-info mb-5">
+            <i class="bi bi-info-circle"></i>
+            Vous avez une question, une suggestion ou besoin d'aide ? N'hésitez pas à nous contacter !
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-question-circle display-1 text-primary mb-3"></i>
+                        <h5 class="card-title">Questions générales</h5>
+                        <p class="card-text text-muted">
+                            Pour toute question sur l'utilisation d'Iovag,
+                            consultez d'abord notre FAQ.
+                        </p>
+                        <a href="{{ url_for('main.faq') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-right"></i> Voir la FAQ
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-bug display-1 text-danger mb-3"></i>
+                        <h5 class="card-title">Signaler un bug</h5>
+                        <p class="card-text text-muted">
+                            Vous avez rencontré un problème technique ?
+                            Aidez-nous à l'améliorer !
+                        </p>
+                        <a href="https://github.com/iovag/iovag/issues" target="_blank" class="btn btn-outline-danger">
+                            <i class="bi bi-github"></i> Signaler sur GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="mb-5">
+            <h2 class="h3 mb-4">Formulaire de contact</h2>
+            <div class="card">
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Sujet <span class="text-danger">*</span></label>
+                            <select class="form-select" id="subject" required>
+                                <option value="">Choisissez un sujet...</option>
+                                <option value="question">Question générale</option>
+                                <option value="bug">Signaler un bug</option>
+                                <option value="suggestion">Suggestion d'amélioration</option>
+                                <option value="autre">Autre</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="message" rows="6" required></textarea>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Note :</strong> Le formulaire de contact n'est pas encore fonctionnel.
+                            Pour nous contacter, veuillez utiliser les méthodes ci-dessous.
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" disabled>
+                            <i class="bi bi-send"></i> Envoyer le message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="h3 mb-4">Autres moyens de contact</h2>
+            <div class="list-group">
+                <div class="list-group-item">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-github fs-2 text-dark me-3"></i>
+                        <div>
+                            <h5 class="mb-1">GitHub</h5>
+                            <p class="mb-0 text-muted">
+                                Contribuez au projet, signalez des bugs ou proposez des améliorations
+                            </p>
+                            <a href="https://github.com/iovag/iovag" target="_blank" class="text-decoration-none">
+                                github.com/iovag/iovag <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="card bg-light">
+            <div class="card-body text-center py-4">
+                <h5 class="card-title mb-3">Vous souhaitez contribuer au projet ?</h5>
+                <p class="card-text mb-3">
+                    Iovag est un projet open source. Toute contribution est la bienvenue !
+                </p>
+                <a href="https://github.com/iovag/iovag" target="_blank" class="btn btn-dark">
+                    <i class="bi bi-github"></i> Voir le projet sur GitHub
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

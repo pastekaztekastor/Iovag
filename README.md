@@ -1,18 +1,19 @@
-# 🍽️ Iovag
+# 🍽️ Iovag - Gestionnaire de Recettes et Menus
 
 **Ici on veille à la gourmandise**
 
-Application web de gestion de menus hebdomadaires et de recettes avec génération automatique de listes de courses.
+Iovag est une plateforme **100% gratuite** et **open source** de gestion culinaire qui vous aide à organiser vos repas, gérer vos recettes et simplifier vos courses. Fini le stress de "qu'est-ce qu'on mange ce soir ?" !
 
-## 🎯 Fonctionnalités
+## ✨ Fonctionnalités
 
-- 📖 Gestion de recettes avec ingrédients et instructions
-- 📅 Création de menus hebdomadaires
-- 🛒 Génération automatique de listes de courses
-- 📊 Gestion intelligente des portions (ajustement automatique des quantités)
-- ⭐ Évaluation et notes sur les recettes
-- 📄 Export PDF (menus, recettes, listes de courses)
-- 👤 Multi-utilisateurs avec authentification
+- 📖 **Gestion de recettes** : Créez, organisez et évaluez vos recettes favorites avec filtres par type de repas et saison
+- 📅 **Planification de menus** : Planifiez vos repas (petit-déjeuner, déjeuner, goûter, dîner) sur plusieurs jours ou semaines
+- 🛒 **Liste de courses intelligente** : Génération automatique avec ajustement des quantités selon le nombre de convives
+- 📦 **Gestion de stock** : Suivez vos ingrédients en stock et recevez des alertes pour les produits à racheter
+- 🎯 **Ajustement automatique** : Les portions s'adaptent intelligemment au nombre de personnes
+- ⭐ **Évaluation** : Notez vos recettes et retrouvez facilement vos favorites
+- 👥 **Multi-utilisateurs** : Authentification sécurisée et données privées
+- 🌍 **Communauté** : Partagez vos recettes avec d'autres passionnés (à venir)
 
 ## 🚀 Installation
 
