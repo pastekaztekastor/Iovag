@@ -40,7 +40,7 @@
                             Vous avez rencontré un problème technique ?
                             Aidez-nous à l'améliorer !
                         </p>
-                        <a href="https://github.com/iovag/iovag/issues" target="_blank" class="btn btn-outline-danger">
+                        <a href="https://github.com/pastekaztekastor/Iovag/issues" target="_blank" class="btn btn-outline-danger">
                             <i class="bi bi-github"></i> Signaler sur GitHub
                         </a>
                     </div>
@@ -52,40 +52,41 @@
             <h2 class="h3 mb-4">Formulaire de contact</h2>
             <div class="card">
                 <div class="card-body">
-                    <form>
+                    <form method="POST" action="{{ url_for('main.contact') }}">
                         <div class="mb-3">
                             <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" required>
+                            <input type="text" class="form-control" id="name" name="name" required>
                         </div>
 
                         <div class="mb-3">
                             <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" id="email" required>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="form-text">Nous vous répondrons à cette adresse.</div>
                         </div>
 
                         <div class="mb-3">
                             <label for="subject" class="form-label">Sujet <span class="text-danger">*</span></label>
-                            <select class="form-select" id="subject" required>
+                            <select class="form-select" id="subject" name="subject" required>
                                 <option value="">Choisissez un sujet...</option>
                                 <option value="question">Question générale</option>
                                 <option value="bug">Signaler un bug</option>
                                 <option value="suggestion">Suggestion d'amélioration</option>
+                                <option value="partenariat">Partenariat</option>
                                 <option value="autre">Autre</option>
                             </select>
                         </div>
 
                         <div class="mb-3">
                             <label for="message" class="form-label">Message <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="message" rows="6" required></textarea>
+                            <textarea class="form-control" id="message" name="message" rows="6" required placeholder="Décrivez votre demande en détail..."></textarea>
                         </div>
 
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <strong>Note :</strong> Le formulaire de contact n'est pas encore fonctionnel.
-                            Pour nous contacter, veuillez utiliser les méthodes ci-dessous.
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Votre message sera enregistré et nous vous répondrons dans les plus brefs délais.
                         </div>
 
-                        <button type="submit" class="btn btn-primary" disabled>
+                        <button type="submit" class="btn btn-primary btn-lg">
                             <i class="bi bi-send"></i> Envoyer le message
                         </button>
                     </form>
@@ -104,8 +105,8 @@
                             <p class="mb-0 text-muted">
                                 Contribuez au projet, signalez des bugs ou proposez des améliorations
                             </p>
-                            <a href="https://github.com/iovag/iovag" target="_blank" class="text-decoration-none">
-                                github.com/iovag/iovag <i class="bi bi-box-arrow-up-right"></i>
+                            <a href="https://github.com/pastekaztekastor/Iovag" target="_blank" class="text-decoration-none">
+                                github.com/pastekaztekastor/Iovag <i class="bi bi-box-arrow-up-right"></i>
                             </a>
                         </div>
                     </div>
@@ -119,7 +120,7 @@
                 <p class="card-text mb-3">
                     Iovag est un projet open source. Toute contribution est la bienvenue !
                 </p>
-                <a href="https://github.com/iovag/iovag" target="_blank" class="btn btn-dark">
+                <a href="https://github.com/pastekaztekastor/Iovag" target="_blank" class="btn btn-dark">
                     <i class="bi bi-github"></i> Voir le projet sur GitHub
                 </a>
             </div>

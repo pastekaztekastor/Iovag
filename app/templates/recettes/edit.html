@@ -111,6 +111,19 @@
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_public" id="is_public" {% if recette.is_public %}checked{% endif %}>
+                            <label class="form-check-label" for="is_public">
+                                <i class="bi bi-globe"></i> <strong>Rendre cette recette publique</strong>
+                            </label>
+                            <div class="form-text">
+                                Si activé, votre recette sera visible par tous les membres de la communauté Iovag.
+                                Vous pourrez la modifier ou la rendre privée à tout moment.
+                            </div>
+                        </div>
+                    </div>
+
                     <hr>
 
                     <!-- Ingrédients -->

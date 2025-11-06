@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Recettes Sauvegardées{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Accueil</a></li>
+                <li class="breadcrumb-item active">Recettes sauvegardées</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-bookmark-heart"></i> Recettes Sauvegardées
+        </h1>
+        <p class="lead text-muted">Recettes de la communauté que vous pouvez utiliser dans vos menus</p>
+    </div>
+</div>
+
+{% if recettes %}
+<div class="row g-4">
+    {% for recette in recettes %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="text-decoration-none text-dark">
+                        {{ recette.nom }}
+                    </a>
+                </h5>
+
+                <!-- Badge "Recette partagée" -->
+                <span class="badge bg-info mb-2">
+                    <i class="bi bi-share"></i> Recette partagée
+                </span>
+
+                <!-- Évaluation -->
+                <div class="mb-2">
+                    {% for i in range(5) %}
+                        {% if i < recette.evaluation %}
+                            <i class="bi bi-star-fill text-warning"></i>
+                        {% else %}
+                            <i class="bi bi-star text-muted"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Infos -->
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge bg-primary">
+                        <i class="bi bi-people"></i> {{ recette.portions }} portions
+                    </span>
+                    {% if recette.temps_preparation %}
+                    <span class="badge bg-info">
+                        <i class="bi bi-clock"></i> {{ recette.temps_preparation }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Auteur -->
+                <p class="text-muted mb-3 small">
+                    <i class="bi bi-person"></i> Par <strong>{{ recette.auteur_nom or recette.auteur.username }}</strong>
+                </p>
+
+                <!-- Type de repas et saison -->
+                <div class="mb-3">
+                    {% if recette.type_repas %}
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="bi bi-dish"></i>
+                            {% for type in recette.get_type_repas_list()[:2] %}
+                                {{ type }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </small>
+                    </div>
+                    {% endif %}
+                    {% if recette.mois_saison %}
+                    <div>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar"></i> {{ recette.get_mois_saison_list()|length }} mois
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card-footer bg-white border-0">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> Voir la recette
+                    </a>
+                    <form method="POST" action="{{ url_for('recettes.unsave_recipe', id=recette.id) }}" onsubmit="return confirm('Voulez-vous retirer cette recette de votre catalogue ?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                            <i class="bi bi-bookmark-dash"></i> Retirer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Vous n'avez encore sauvegardé aucune recette.
+    <a href="{{ url_for('main.explore_recipes') }}" class="alert-link">Explorer les recettes de la communauté</a>
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ url_for('main.explore_recipes') }}" class="btn btn-primary">
+        <i class="bi bi-compass"></i> Explorer les recettes
+    </a>
+    <a href="{{ url_for('recettes.index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Mes recettes
+    </a>
+</div>
+
+{% endblock %}

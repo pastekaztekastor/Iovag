@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Messages de contact - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-envelope-open"></i> Messages de contact
+        </h1>
+        <p class="lead text-muted">Gérez les messages reçus via le formulaire de contact</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ messages|length }}</h5>
+                <p class="card-text text-muted">Total messages</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">{{ messages|selectattr('read', 'equalto', false)|list|length }}</h5>
+                <p class="card-text text-muted">Non lus</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">{{ messages|selectattr('replied', 'equalto', true)|list|length }}</h5>
+                <p class="card-text text-muted">Répondus</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if messages %}
+<div class="row">
+    <div class="col-12">
+        {% for message in messages %}
+        <div class="card mb-3 {% if not message.read %}border-primary{% endif %}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{ message.name }}</strong>
+                    <span class="text-muted">- {{ message.email }}</span>
+                    {% if not message.read %}
+                    <span class="badge bg-primary ms-2">Nouveau</span>
+                    {% endif %}
+                    {% if message.replied %}
+                    <span class="badge bg-success ms-2">Répondu</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">{{ message.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-tag"></i> {{ message.subject }}
+                </h5>
+                <p class="card-text">{{ message.message }}</p>
+
+                <div class="btn-group" role="group">
+                    {% if not message.read %}
+                    <form method="POST" action="{{ url_for('main.mark_message_read', message_id=message.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-check2"></i> Marquer comme lu
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% if not message.replied %}
+                    <form method="POST" action="{{ url_for('main.mark_message_replied', message_id=message.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-reply"></i> Marquer comme répondu
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <a href="mailto:{{ message.email }}?subject=Re: {{ message.subject }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-envelope"></i> Répondre par email
+                    </a>
+
+                    <form method="POST" action="{{ url_for('main.delete_contact_message', message_id=message.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce message ?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Aucun message de contact pour le moment.
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Retour au tableau de bord
+    </a>
+</div>
+{% endblock %}

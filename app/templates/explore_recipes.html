@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Explorer les Recettes{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-compass"></i> Explorer les Recettes
+        </h1>
+        <p class="lead text-muted">Découvrez les meilleures recettes partagées par la communauté Iovag</p>
+    </div>
+</div>
+
+{% if recettes %}
+<div class="row g-4">
+    {% for recette in recettes %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm hover-card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="text-decoration-none text-dark">
+                        {{ recette.nom }}
+                    </a>
+                </h5>
+
+                <!-- Évaluation -->
+                <div class="mb-2">
+                    {% for i in range(5) %}
+                        {% if i < recette.evaluation %}
+                            <i class="bi bi-star-fill text-warning"></i>
+                        {% else %}
+                            <i class="bi bi-star text-muted"></i>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="ms-1 text-muted small">({{ recette.evaluation }}/5)</span>
+                </div>
+
+                <!-- Description -->
+                {% if recette.description %}
+                <p class="card-text text-muted small">
+                    {{ recette.description[:100] }}{% if recette.description|length > 100 %}...{% endif %}
+                </p>
+                {% endif %}
+
+                <!-- Infos -->
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge bg-primary">
+                        <i class="bi bi-people"></i> {{ recette.portions }} portions
+                    </span>
+                    {% if recette.temps_preparation %}
+                    <span class="badge bg-info">
+                        <i class="bi bi-clock"></i> {{ recette.temps_preparation }}
+                    </span>
+                    {% endif %}
+                    {% if recette.type_repas %}
+                    <span class="badge bg-success">
+                        {{ recette.type_repas.split(',')[0] }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Auteur -->
+                <p class="text-muted mb-3 small">
+                    <i class="bi bi-person"></i> Par <strong>{{ recette.auteur_nom or 'Anonyme' }}</strong>
+                </p>
+
+                <!-- Ingrédients/Instructions count -->
+                <div class="text-muted small mb-3">
+                    <i class="bi bi-egg"></i> {{ recette.ingredients.count() }} ingrédients •
+                    <i class="bi bi-list-ol"></i> {{ recette.instructions.count() }} étapes
+                </div>
+            </div>
+
+            <div class="card-footer bg-white border-0">
+                {% if current_user.is_authenticated %}
+                    {% if recette.created_by == current_user.id %}
+                        <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-eye"></i> Voir ma recette
+                        </a>
+                    {% else %}
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> Voir la recette
+                            </a>
+                            {% if recette not in current_user.recettes_sauvegardees %}
+                                <form method="POST" action="{{ url_for('recettes.save_recipe', id=recette.id) }}">
+                                    <button type="submit" class="btn btn-sm btn-success w-100">
+                                        <i class="bi bi-bookmark-plus"></i> Ajouter à mon catalogue
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="btn btn-sm btn-outline-success w-100 disabled">
+                                    <i class="bi bi-bookmark-check"></i> Déjà sauvegardée
+                                </span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="bi bi-eye"></i> Voir la recette
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+}
+</style>
+
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Aucune recette publique n'est disponible pour le moment.
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('recettes.create') }}" class="alert-link">Soyez le premier à partager une recette !</a>
+    {% else %}
+    <a href="{{ url_for('auth.register') }}" class="alert-link">Inscrivez-vous pour partager vos recettes !</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if current_user.is_authenticated %}
+<div class="mt-4">
+    <a href="{{ url_for('recettes.create') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Créer une nouvelle recette
+    </a>
+    <a href="{{ url_for('recettes.index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Mes recettes
+    </a>
+</div>
+{% else %}
+<div class="mt-4 text-center">
+    <div class="card bg-light">
+        <div class="card-body py-4">
+            <h5 class="card-title mb-3">Envie de partager vos recettes ?</h5>
+            <p class="card-text mb-3">Rejoignez la communauté Iovag gratuitement !</p>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-person-plus"></i> Créer mon compte
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

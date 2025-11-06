@@ -112,6 +112,14 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+# Table d'association pour les recettes favorites
+recettes_favorites = db.Table('recettes_favorites',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('recette_id', db.Integer, db.ForeignKey('recettes.id'), primary_key=True),
+    db.Column('added_at', db.DateTime, default=datetime.utcnow)
+)
+
+
 class User(UserMixin, db.Model):
     """Modèle utilisateur"""
     __tablename__ = 'users'
@@ -121,11 +129,14 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_admin = db.Column(db.Boolean, default=False)
+    onboarding_completed = db.Column(db.Boolean, default=False)
 
     # Relations
-    recettes = db.relationship('Recette', backref='auteur', lazy='dynamic', cascade='all, delete-orphan')
+    recettes = db.relationship('Recette', backref='auteur', lazy='dynamic', cascade='all, delete-orphan', foreign_keys='Recette.created_by')
     menus = db.relationship('Menu', backref='auteur', lazy='dynamic', cascade='all, delete-orphan')
     stock = db.relationship('Stock', backref='utilisateur', lazy='dynamic', cascade='all, delete-orphan')
+    recettes_sauvegardees = db.relationship('Recette', secondary=recettes_favorites, backref='utilisateurs_sauvegardes', lazy='dynamic')
 
     def set_password(self, password):
         """Hasher le mot de passe"""
@@ -239,6 +250,7 @@ class Recette(db.Model):
     note = db.Column(db.Text)  # Notes personnelles
     mois_saison = db.Column(db.String(200))  # Mois de saison basés sur les ingrédients (format: "Janvier,Février,Mars")
     type_repas = db.Column(db.String(200))  # Type de repas (format: "Petit-déjeuner,Déjeuner,Goûter,Dîner")
+    is_public = db.Column(db.Boolean, default=True)  # Si True, visible par tous les membres
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
@@ -821,3 +833,33 @@ class InventaireItem(db.Model):
 
     def __repr__(self):
         return f'<InventaireItem {self.ingredient.nom}: {self.ecart:+.1f} {self.unite}>'
+
+
+class ContactMessage(db.Model):
+    """Messages de contact envoyés via le formulaire"""
+    __tablename__ = 'contact_messages'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    read = db.Column(db.Boolean, default=False)
+    replied = db.Column(db.Boolean, default=False)
+
+    def __repr__(self):
+        return f'<ContactMessage from {self.email}: {self.subject}>'
+
+    def to_dict(self):
+        """Convertit le message en dictionnaire"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'subject': self.subject,
+            'message': self.message,
+            'created_at': self.created_at.isoformat(),
+            'read': self.read,
+            'replied': self.replied
+        }

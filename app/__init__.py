@@ -60,6 +60,13 @@ def create_app(config_name=None):
     app.register_blueprint(stock.bp)
     app.register_blueprint(inventaires.bp)
 
+    # Gestionnaires d'erreurs
+    @app.errorhandler(403)
+    def forbidden(e):
+        """Gestionnaire pour erreur 403 - Accès interdit"""
+        from flask import render_template
+        return render_template('errors/403.html'), 403
+
     # Contexte du processeur de template
     @app.context_processor
     def utility_processor():

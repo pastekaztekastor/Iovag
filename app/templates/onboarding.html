@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Bienvenue sur Iovag !{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- En-tête -->
+            <div class="text-center mb-5">
+                <h1 class="display-4 mb-3">
+                    <i class="bi bi-cup-hot-fill text-primary"></i> Bienvenue sur Iovag !
+                </h1>
+                <p class="lead text-muted">
+                    Découvrez comment tirer le meilleur parti de votre gestionnaire de recettes
+                </p>
+            </div>
+
+            <!-- Étapes de l'onboarding -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-body p-5">
+                    <h2 class="mb-4 text-center">Pour bien démarrer, suivez ces 5 étapes :</h2>
+
+                    <!-- Étape 1 : Inventaire -->
+                    <div class="step-card mb-4 p-4 border rounded shadow-sm">
+                        <div class="d-flex align-items-start">
+                            <div class="step-number me-4">
+                                <span class="badge bg-primary rounded-circle" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">1</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h3 class="h4 mb-3">
+                                    <i class="bi bi-box-seam text-primary"></i> Faire l'inventaire de sa cuisine
+                                </h3>
+                                <p class="text-muted mb-3">
+                                    Commencez par enregistrer les ingrédients que vous avez déjà chez vous.
+                                    Cela vous permettra de générer des listes de courses optimisées.
+                                </p>
+                                <a href="{{ url_for('inventaires.nouveau') }}" class="btn btn-primary">
+                                    <i class="bi bi-arrow-right-circle"></i> Faire mon inventaire
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Étape 2 : Explorer les recettes -->
+                    <div class="step-card mb-4 p-4 border rounded shadow-sm">
+                        <div class="d-flex align-items-start">
+                            <div class="step-number me-4">
+                                <span class="badge bg-success rounded-circle" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">2</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h3 class="h4 mb-3">
+                                    <i class="bi bi-compass text-success"></i> Regarder les recettes de la communauté
+                                </h3>
+                                <p class="text-muted mb-3">
+                                    Explorez les recettes partagées par les autres membres d'Iovag.
+                                    Ajoutez celles qui vous plaisent à votre catalogue !
+                                </p>
+                                <a href="{{ url_for('main.explore_recipes') }}" class="btn btn-success">
+                                    <i class="bi bi-arrow-right-circle"></i> Explorer les recettes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Étape 3 : Composer un menu -->
+                    <div class="step-card mb-4 p-4 border rounded shadow-sm">
+                        <div class="d-flex align-items-start">
+                            <div class="step-number me-4">
+                                <span class="badge bg-info rounded-circle" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">3</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h3 class="h4 mb-3">
+                                    <i class="bi bi-calendar-week text-info"></i> Composer un menu
+                                </h3>
+                                <p class="text-muted mb-3">
+                                    Planifiez vos repas pour la semaine en créant votre premier menu.
+                                    Gagnez du temps et réduisez le gaspillage alimentaire.
+                                </p>
+                                <a href="{{ url_for('menus.create') }}" class="btn btn-info">
+                                    <i class="bi bi-arrow-right-circle"></i> Créer mon menu
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Étape 4 : Liste de courses -->
+                    <div class="step-card mb-4 p-4 border rounded shadow-sm">
+                        <div class="d-flex align-items-start">
+                            <div class="step-number me-4">
+                                <span class="badge bg-warning rounded-circle" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">4</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h3 class="h4 mb-3">
+                                    <i class="bi bi-cart text-warning"></i> Faire une liste de courses
+                                </h3>
+                                <p class="text-muted mb-3">
+                                    Générez automatiquement votre liste de courses à partir de votre menu.
+                                    Les quantités sont calculées en tenant compte de votre stock !
+                                </p>
+                                <a href="{{ url_for('courses.index') }}" class="btn btn-warning">
+                                    <i class="bi bi-arrow-right-circle"></i> Mes listes de courses
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Étape 5 : Manger ! -->
+                    <div class="step-card mb-4 p-4 border rounded shadow-sm bg-light">
+                        <div class="d-flex align-items-start">
+                            <div class="step-number me-4">
+                                <span class="badge bg-danger rounded-circle" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">5</span>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h3 class="h4 mb-3">
+                                    <i class="bi bi-emoji-smile text-danger"></i> Manger !
+                                </h3>
+                                <p class="text-muted mb-3">
+                                    Et voilà ! Vous êtes prêt à profiter de vos repas sans stress.
+                                    Bon appétit et bienvenue dans la communauté Iovag !
+                                </p>
+                                <p class="mb-0">
+                                    <strong><i class="bi bi-hand-thumbs-up"></i> Conseil :</strong>
+                                    N'oubliez pas de partager vos propres recettes avec la communauté !
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bouton pour terminer l'onboarding -->
+            <div class="text-center mb-4">
+                <form method="POST" action="{{ url_for('main.complete_onboarding') }}">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle"></i> J'ai compris, commençons !
+                    </button>
+                </form>
+                <p class="text-muted mt-3">
+                    <small>Vous pourrez toujours accéder à ces informations plus tard</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.step-card:hover {
+    transform: translateX(10px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}

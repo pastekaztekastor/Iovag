@@ -31,14 +31,27 @@
                 <ul class="navbar-nav me-auto">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('main.explore_recipes') }}">
+                            <i class="bi bi-compass"></i> Explorer
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('menus.index') }}">
                             <i class="bi bi-calendar-week"></i> Mes Menus
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('recettes.index') }}">
-                            <i class="bi bi-book"></i> Mes Recettes
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="recettesDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-book"></i> Recettes
                         </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('recettes.index') }}">
+                                <i class="bi bi-book"></i> Mes Recettes
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('recettes.saved') }}">
+                                <i class="bi bi-bookmark-heart"></i> Recettes Sauvegardées
+                            </a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('ingredients.index') }}">
@@ -64,6 +77,12 @@
                             <i class="bi bi-person-circle"></i> {{ current_user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            {% if current_user.is_admin %}
+                            <li><a class="dropdown-item" href="{{ url_for('main.admin_contact_messages') }}">
+                                <i class="bi bi-envelope-open"></i> Messages de contact
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="#">
                                 <i class="bi bi-gear"></i> Paramètres
                             </a></li>
@@ -135,6 +154,11 @@
                         <li class="mb-2">
                             <a href="{{ url_for('main.contact') }}" class="text-muted text-decoration-none">
                                 <i class="bi bi-envelope"></i> Nous contacter
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{{ url_for('main.cgu') }}" class="text-muted text-decoration-none">
+                                <i class="bi bi-file-text"></i> CGU
                             </a>
                         </li>
                     </ul>

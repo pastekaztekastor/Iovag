@@ -18,7 +18,18 @@
     <div class="col-lg-8">
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-                <h1 class="card-title">{{ recette.nom }}</h1>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h1 class="card-title mb-0">{{ recette.nom }}</h1>
+                    {% if recette.is_public %}
+                    <span class="badge bg-success">
+                        <i class="bi bi-globe"></i> Publique
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-lock"></i> Privée
+                    </span>
+                    {% endif %}
+                </div>
 
                 <div class="star-rating mb-3">
                     {% for i in range(5) %}
@@ -118,6 +129,23 @@
                         </button>
                     </form>
                     <hr>
+                    {% else %}
+                    {% if recette.is_public %}
+                        {% if recette not in current_user.recettes_sauvegardees %}
+                        <form method="POST" action="{{ url_for('recettes.save_recipe', id=recette.id) }}">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-bookmark-plus"></i> Ajouter à mon catalogue
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('recettes.unsave_recipe', id=recette.id) }}" onsubmit="return confirm('Voulez-vous retirer cette recette de votre catalogue ?');">
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-bookmark-dash"></i> Retirer du catalogue
+                            </button>
+                        </form>
+                        {% endif %}
+                        <hr>
+                    {% endif %}
                     {% endif %}
                     <a href="{{ url_for('recettes.index') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left"></i> Retour aux recettes

@@ -18,6 +18,15 @@ def index():
     return render_template('recettes/index.html', recettes=recettes, now=datetime.now())
 
 
+@bp.route('/saved')
+@login_required
+def saved():
+    """Liste des recettes sauvegardées (des autres utilisateurs)"""
+    from datetime import datetime
+    recettes_sauvegardees = current_user.recettes_sauvegardees.all()
+    return render_template('recettes/saved.html', recettes=recettes_sauvegardees, now=datetime.now())
+
+
 @bp.route('/<int:id>')
 @login_required
 def detail(id):
@@ -48,6 +57,9 @@ def create():
         type_repas_list = request.form.getlist('type_repas[]')
         type_repas_str = ','.join(type_repas_list) if type_repas_list else None
 
+        # Récupérer la visibilité
+        is_public = 'is_public' in request.form
+
         # Créer la recette
         recette = Recette(
             nom=nom,
@@ -59,6 +71,7 @@ def create():
             note=note if note else None,
             mois_saison=mois_saison_str,
             type_repas=type_repas_str,
+            is_public=is_public,
             created_by=current_user.id
         )
         db.session.add(recette)
@@ -142,6 +155,9 @@ def edit(id):
         type_repas_list = request.form.getlist('type_repas[]')
         recette.type_repas = ','.join(type_repas_list) if type_repas_list else None
 
+        # Mettre à jour la visibilité
+        recette.is_public = 'is_public' in request.form
+
         # Supprimer les ingrédients existants
         RecetteIngredient.query.filter_by(recette_id=recette.id).delete()
 
@@ -214,6 +230,50 @@ def delete(id):
     return redirect(url_for('recettes.index'))
 
 
+@bp.route('/<int:id>/save', methods=['POST'])
+@login_required
+def save_recipe(id):
+    """Ajouter une recette publique à ses favoris"""
+    recette = Recette.query.get_or_404(id)
+
+    # Vérifier que la recette est publique
+    if not recette.is_public and recette.created_by != current_user.id:
+        flash('Cette recette n\'est pas disponible.', 'danger')
+        return redirect(url_for('main.explore_recipes'))
+
+    # Vérifier que l'utilisateur ne sauvegarde pas sa propre recette
+    if recette.created_by == current_user.id:
+        flash('Cette recette vous appartient déjà.', 'info')
+        return redirect(url_for('recettes.detail', id=id))
+
+    # Vérifier si déjà sauvegardée
+    if recette in current_user.recettes_sauvegardees:
+        flash('Cette recette est déjà dans votre catalogue.', 'info')
+        return redirect(url_for('recettes.detail', id=id))
+
+    # Ajouter aux favoris
+    current_user.recettes_sauvegardees.append(recette)
+    db.session.commit()
+    flash(f'Recette "{recette.nom}" ajoutée à votre catalogue !', 'success')
+    return redirect(url_for('recettes.detail', id=id))
+
+
+@bp.route('/<int:id>/unsave', methods=['POST'])
+@login_required
+def unsave_recipe(id):
+    """Retirer une recette de ses favoris"""
+    recette = Recette.query.get_or_404(id)
+
+    if recette not in current_user.recettes_sauvegardees:
+        flash('Cette recette n\'est pas dans votre catalogue.', 'info')
+        return redirect(url_for('recettes.detail', id=id))
+
+    current_user.recettes_sauvegardees.remove(recette)
+    db.session.commit()
+    flash(f'Recette "{recette.nom}" retirée de votre catalogue.', 'success')
+    return redirect(url_for('recettes.saved'))
+
+
 @bp.route('/api/search')
 @login_required
 def api_search():
@@ -243,8 +303,10 @@ def api_search():
         except ValueError:
             pass
 
-    # Récupérer toutes les recettes de l'utilisateur
-    recettes = Recette.query.filter_by(created_by=current_user.id).all()
+    # Récupérer toutes les recettes de l'utilisateur + recettes sauvegardées
+    recettes_perso = Recette.query.filter_by(created_by=current_user.id).all()
+    recettes_sauvegardees = current_user.recettes_sauvegardees.all()
+    recettes = recettes_perso + recettes_sauvegardees
 
     resultats = []
 
