@@ -107,6 +107,34 @@
                     </div>
                 </div>
                 {% endfor %}
+
+                <!-- Gâteaux -->
+                {% if menu.gateaux.count() > 0 %}
+                <h2 class="mt-4 mb-3"><i class="bi bi-cake2"></i> Gâteaux</h2>
+                <div class="row">
+                    {% for gateau in menu.gateaux.order_by('ordre').all() %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="{{ url_for('recettes.detail', id=gateau.recette.id) }}" class="text-decoration-none">
+                                        {{ gateau.recette.nom }}
+                                    </a>
+                                </h5>
+                                {% if gateau.note %}
+                                <p class="card-text text-muted"><small><i class="bi bi-sticky"></i> {{ gateau.note }}</small></p>
+                                {% endif %}
+                                <p class="card-text">
+                                    <small class="text-muted">
+                                        <i class="bi bi-people"></i> {{ menu.nb_personnes }} portions
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

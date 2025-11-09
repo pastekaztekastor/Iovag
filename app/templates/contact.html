@@ -55,12 +55,12 @@
                     <form method="POST" action="{{ url_for('main.contact') }}">
                         <div class="mb-3">
                             <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            <input type="text" class="form-control" id="name" name="name" value="{% if current_user.is_authenticated %}{{ current_user.username }}{% endif %}" required>
                         </div>
 
                         <div class="mb-3">
                             <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" id="email" name="email" required>
+                            <input type="email" class="form-control" id="email" name="email" value="{% if current_user.is_authenticated %}{{ current_user.email }}{% endif %}" required>
                             <div class="form-text">Nous vous répondrons à cette adresse.</div>
                         </div>
 

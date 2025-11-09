@@ -48,6 +48,11 @@
                             <div>
                                 <small class="text-muted d-block">Portions</small>
                                 <strong>{{ recette.portions }}</strong>
+                                {% if not recette.est_divisible %}
+                                <br><span class="badge bg-warning text-dark" title="Recette indivisible">
+                                    <i class="bi bi-exclamation-triangle"></i> Minimum: {{ recette.get_portions_min() }}
+                                </span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -88,13 +93,35 @@
                 <!-- Ingrédients -->
                 <h2 class="mt-4 mb-3"><i class="bi bi-basket"></i> Ingrédients</h2>
                 {% if recette.ingredients.count() > 0 %}
+                {% set ingredients_manquants = [] %}
                 <ul class="list-group list-group-flush">
                     {% for ri in recette.ingredients %}
-                    <li class="list-group-item">
+                    {% set en_stock = stock_info.get(ri.id, {}).get('en_stock', False) %}
+                    <li class="list-group-item {% if not en_stock %}text-danger{% endif %}">
+                        {% if not en_stock %}
+                        <i class="bi bi-exclamation-triangle text-danger"></i>
+                        {% set _ = ingredients_manquants.append(ri.ingredient.nom) %}
+                        {% else %}
+                        <i class="bi bi-check-circle text-success"></i>
+                        {% endif %}
                         <strong>{{ ri.get_affichage_avec_poids() }}</strong> {{ ri.ingredient.nom }}
+                        {% if not en_stock %}
+                        <small class="text-danger">(manquant)</small>
+                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
+
+                {% if ingredients_manquants|length > 0 %}
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>{{ ingredients_manquants|length }} ingrédient(s) manquant(s)</strong>
+                    <p class="mb-0 mt-2">
+                        <a href="{{ url_for('stock.add') }}" class="alert-link">Mettre à jour mon stock</a> ou
+                        <a href="{{ url_for('inventaires.nouveau') }}" class="alert-link">faire un inventaire</a>
+                    </p>
+                </div>
+                {% endif %}
                 {% else %}
                 <p class="text-muted">Aucun ingrédient renseigné</p>
                 {% endif %}
@@ -119,6 +146,33 @@
             <div class="card-body">
                 <h5 class="card-title">Actions</h5>
                 <div class="d-grid gap-2">
+                    <!-- Bouton Cuisiner -->
+                    <form method="POST" action="{{ url_for('recettes.cuisiner', id=recette.id) }}" id="form-cuisiner" data-ingredients-manquants="{{ ingredients_manquants|length }}">
+                        <div class="input-group mb-2">
+                            <input type="number" name="nb_personnes" class="form-control" value="{{ recette.portions }}" min="{{ recette.get_portions_min() }}" required>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-egg-fried"></i> Cuisiner
+                            </button>
+                        </div>
+                        {% if not recette.est_divisible %}
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> Recette indivisible - Minimum {{ recette.get_portions_min() }} portions
+                        </small>
+                        {% endif %}
+                    </form>
+                    <hr>
+
+                    <!-- Boutons d'export -->
+                    <div class="d-grid gap-2 mb-3">
+                        <a href="{{ url_for('recettes.telecharger_pdf', id=recette.id) }}" class="btn btn-outline-danger">
+                            <i class="bi bi-file-pdf"></i> Télécharger en PDF
+                        </a>
+                        <button type="button" class="btn btn-outline-success" onclick="copierRecetteTexte({{ recette.id }})">
+                            <i class="bi bi-clipboard"></i> Copier au format texte
+                        </button>
+                    </div>
+                    <hr>
+
                     {% if recette.created_by == current_user.id %}
                     <a href="{{ url_for('recettes.edit', id=recette.id) }}" class="btn btn-outline-primary">
                         <i class="bi bi-pencil"></i> Modifier
@@ -154,6 +208,66 @@
             </div>
         </div>
 
+        <!-- Commentaires -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-chat-dots"></i> Commentaires</h5>
+
+                {% set mon_commentaire = recette.commentaires.filter_by(user_id=current_user.id).first() %}
+
+                <!-- Mon commentaire -->
+                <form method="POST" action="{{ url_for('recettes.ajouter_commentaire', id=recette.id) }}" class="mb-3">
+                    <div class="mb-2">
+                        <label class="form-label fw-bold">Ma note</label>
+                        <textarea name="commentaire" class="form-control" rows="3" placeholder="Laissez votre avis sur cette recette..." required>{{ mon_commentaire.commentaire if mon_commentaire else '' }}</textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-save"></i> {{ 'Modifier' if mon_commentaire else 'Ajouter' }}
+                        </button>
+                        {% if mon_commentaire %}
+                        <form method="POST" action="{{ url_for('recettes.supprimer_commentaire', id=recette.id) }}" onsubmit="return confirm('Supprimer votre commentaire ?');" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </form>
+
+                <hr>
+
+                <!-- Commentaires des autres -->
+                <h6>Avis de la communauté</h6>
+                {% for comment in recette.commentaires.all() %}
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ comment.utilisateur.username }}</strong>
+                            <small class="text-muted">{{ comment.created_at.strftime('%d/%m/%Y') }}</small>
+                        </div>
+                        <p class="mb-2">{{ comment.commentaire }}</p>
+
+                        {% if comment.reponse_auteur %}
+                        <div class="alert alert-info mb-0">
+                            <strong>Réponse de l'auteur :</strong> {{ comment.reponse_auteur }}
+                        </div>
+                        {% elif recette.created_by == current_user.id and comment.user_id != current_user.id %}
+                        <form method="POST" action="{{ url_for('recettes.repondre_commentaire', recette_id=recette.id, comment_id=comment.id) }}">
+                            <div class="input-group input-group-sm mt-2">
+                                <input type="text" name="reponse" class="form-control" placeholder="Votre réponse...">
+                                <button class="btn btn-outline-primary" type="submit">Répondre</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted"><small>Aucun commentaire pour le moment.</small></p>
+                {% endfor %}
+            </div>
+        </div>
+
         <div class="card shadow-sm">
             <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-info-circle"></i> Informations</h5>
@@ -166,4 +280,53 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Confirmation si ingrédients manquants
+document.getElementById('form-cuisiner').addEventListener('submit', function(e) {
+    const nbManquants = parseInt(this.dataset.ingredientsManquants);
+
+    if (nbManquants > 0) {
+        e.preventDefault();
+
+        const message = `Attention ! Il vous manque ${nbManquants} ingrédient(s) en stock.\n\n` +
+                       `Si vous cuisinez quand même, cela créera un stock négatif pour ces ingrédients.\n\n` +
+                       `Nous vous recommandons de faire un inventaire ou de mettre à jour votre stock d'abord.\n\n` +
+                       `Voulez-vous vraiment continuer ?`;
+
+        if (confirm(message)) {
+            this.submit();
+        }
+    }
+});
+
+// Confirmation de suppression
+function confirmDelete(message) {
+    return confirm(message);
+}
+
+// Copier la recette au format texte dans le presse-papier
+async function copierRecetteTexte(recetteId) {
+    try {
+        // Récupérer le texte depuis le serveur
+        const response = await fetch(`/recettes/${recetteId}/texte`);
+        const data = await response.json();
+
+        if (data.texte) {
+            // Copier dans le presse-papier
+            await navigator.clipboard.writeText(data.texte);
+
+            // Message de confirmation
+            alert('Recette copiée dans le presse-papier !');
+        } else {
+            alert('Erreur lors de la récupération de la recette');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la copie. Assurez-vous que votre navigateur supporte cette fonctionnalité.');
+    }
+}
+</script>
 {% endblock %}

@@ -74,6 +74,15 @@
                         <div class="form-text">Quantité minimale avant alerte de stock faible</div>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="poids_estime_g" class="form-label">Poids estimé d'une pièce</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="poids_estime_g" name="poids_estime_g" min="0" step="0.1" value="{{ ingredient.poids_estime_g or '' }}" placeholder="150">
+                            <span class="input-group-text">grammes</span>
+                        </div>
+                        <div class="form-text">Pour fruits & légumes : poids moyen d'une pièce (ex: 150g pour une tomate)</div>
+                    </div>
+
                     <div class="mb-4">
                         <label class="form-label">Mois de saison (fruits & légumes)</label>
                         <div class="form-text mb-2">Sélectionnez les mois où cet ingrédient est de saison</div>

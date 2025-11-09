@@ -197,3 +197,87 @@ def nb_stock_bas():
 
     nb = sum(1 for s in stocks if est_stock_bas(s))
     return jsonify({'nb_stock_bas': nb})
+
+
+@bp.route('/saisie-rapide')
+@login_required
+def saisie_rapide():
+    """Interface de saisie rapide du stock"""
+    # Récupérer tous les ingrédients triés par lieu de rangement
+    ingredients = Ingredient.query.order_by(
+        Ingredient.lieu_rangement.nullslast(),
+        Ingredient.nom
+    ).all()
+
+    # Grouper par lieu de rangement
+    ingredients_par_lieu = {}
+    for ingredient in ingredients:
+        lieu = ingredient.lieu_rangement or 'Non rangé'
+        if lieu not in ingredients_par_lieu:
+            ingredients_par_lieu[lieu] = []
+
+        # Récupérer le stock actuel si existe
+        stock = Stock.query.filter_by(
+            user_id=current_user.id,
+            ingredient_id=ingredient.id
+        ).first()
+
+        ingredients_par_lieu[lieu].append({
+            'ingredient': ingredient,
+            'stock': stock
+        })
+
+    return render_template('stock/saisie_rapide.html',
+                         ingredients_par_lieu=ingredients_par_lieu)
+
+
+@bp.route('/saisie-rapide/save', methods=['POST'])
+@login_required
+def saisie_rapide_save():
+    """Enregistrer/mettre à jour le stock d'un ingrédient"""
+    ingredient_id = request.form.get('ingredient_id', type=int)
+    quantite = request.form.get('quantite', type=float)
+    unite = request.form.get('unite')
+
+    if not all([ingredient_id, quantite, unite]):
+        return jsonify({'success': False, 'error': 'Données manquantes'}), 400
+
+    ingredient = Ingredient.query.get_or_404(ingredient_id)
+
+    # Chercher si le stock existe déjà
+    stock = Stock.query.filter_by(
+        user_id=current_user.id,
+        ingredient_id=ingredient_id
+    ).first()
+
+    if stock:
+        # Mettre à jour
+        stock.quantite = quantite
+        stock.unite = unite
+    else:
+        # Créer nouveau
+        stock = Stock(
+            user_id=current_user.id,
+            ingredient_id=ingredient_id,
+            quantite=quantite,
+            unite=unite
+        )
+        db.session.add(stock)
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'ingredient_nom': ingredient.nom,
+        'quantite': quantite,
+        'unite': unite
+    })
+
+
+@bp.route('/saisie-rapide/skip', methods=['POST'])
+@login_required
+def saisie_rapide_skip():
+    """Passer un ingrédient sans le modifier"""
+    # Cette route est juste pour la cohérence de l'interface
+    # Elle ne fait rien mais retourne un succès
+    return jsonify({'success': True, 'skipped': True})

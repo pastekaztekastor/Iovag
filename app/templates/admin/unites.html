@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des unités{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            <i class="bi bi-rulers"></i> Gestion des unités de mesure
+        </h1>
+        <p class="lead text-muted">
+            Gérez les unités disponibles pour les recettes et le stock
+        </p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('unites.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouvelle unité
+        </a>
+        <a href="{{ url_for('unites.conversions') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left-right"></i> Conversions personnalisées
+        </a>
+    </div>
+</div>
+
+<!-- Unités de masse -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-box-seam"></i> Unités de masse
+            <span class="badge bg-light text-dark">{{ unites_masse|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if unites_masse %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Symbole</th>
+                        <th>Unité de base</th>
+                        <th>Facteur de conversion</th>
+                        <th>Description</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for unite in unites_masse %}
+                    <tr>
+                        <td><strong>{{ unite.nom }}</strong></td>
+                        <td><code>{{ unite.symbole }}</code></td>
+                        <td>
+                            {% if unite.unite_base %}
+                            {{ unite.unite_base.symbole }}
+                            {% else %}
+                            <span class="badge bg-success">Base</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ unite.facteur_vers_base }}</td>
+                        <td><small class="text-muted">{{ unite.description or '-' }}</small></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('unites.edit', id=unite.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('unites.delete', id=unite.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Supprimer cette unité ?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Aucune unité de masse définie.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Unités de volume -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-droplet"></i> Unités de volume
+            <span class="badge bg-light text-dark">{{ unites_volume|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if unites_volume %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Symbole</th>
+                        <th>Unité de base</th>
+                        <th>Facteur de conversion</th>
+                        <th>Description</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for unite in unites_volume %}
+                    <tr>
+                        <td><strong>{{ unite.nom }}</strong></td>
+                        <td><code>{{ unite.symbole }}</code></td>
+                        <td>
+                            {% if unite.unite_base %}
+                            {{ unite.unite_base.symbole }}
+                            {% else %}
+                            <span class="badge bg-success">Base</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ unite.facteur_vers_base }}</td>
+                        <td><small class="text-muted">{{ unite.description or '-' }}</small></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('unites.edit', id=unite.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('unites.delete', id=unite.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Supprimer cette unité ?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Aucune unité de volume définie.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Unités unitaires -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0">
+            <i class="bi bi-123"></i> Unités unitaires
+            <span class="badge bg-light text-dark">{{ unites_unitaires|length }}</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if unites_unitaires %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Symbole</th>
+                        <th>Description</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for unite in unites_unitaires %}
+                    <tr>
+                        <td><strong>{{ unite.nom }}</strong></td>
+                        <td><code>{{ unite.symbole }}</code></td>
+                        <td><small class="text-muted">{{ unite.description or '-' }}</small></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('unites.edit', id=unite.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('unites.delete', id=unite.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Supprimer cette unité ?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted">Aucune unité unitaire définie.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <h6><i class="bi bi-info-circle"></i> Information</h6>
+    <p class="mb-0">
+        Les unités unitaires (pièce, gousse, etc.) peuvent avoir des conversions personnalisées
+        par ingrédient. Utilisez la page "Conversions personnalisées" pour les définir.
+    </p>
+</div>
+{% endblock %}

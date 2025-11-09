@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des commentaires{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-chat-dots"></i> Gestion des commentaires
+        </h1>
+        <p class="lead text-muted">{{ commentaires|length }} commentaire(s) sur les recettes</p>
+    </div>
+</div>
+
+{% if commentaires %}
+<div class="row">
+    <div class="col-12">
+        {% for commentaire in commentaires %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-person-circle"></i> <strong>{{ commentaire.utilisateur.username }}</strong>
+                        sur <a href="{{ url_for('recettes.detail', id=commentaire.recette.id) }}" class="text-decoration-none">
+                            <i class="bi bi-book"></i> {{ commentaire.recette.nom }}
+                        </a>
+                    </div>
+                    <small class="text-muted">
+                        {{ commentaire.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                        {% if commentaire.updated_at != commentaire.created_at %}
+                        (modifié le {{ commentaire.updated_at.strftime('%d/%m/%Y') }})
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ commentaire.commentaire }}</p>
+
+                {% if commentaire.reponse_auteur %}
+                <div class="alert alert-info mb-0">
+                    <strong><i class="bi bi-reply"></i> Réponse de l'auteur ({{ commentaire.recette.auteur.username }}) :</strong>
+                    <p class="mb-0 mt-2">{{ commentaire.reponse_auteur }}</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Par {{ commentaire.utilisateur.username }} ({{ commentaire.utilisateur.email }})
+                    </small>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCommentModal{{ commentaire.id }}">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de confirmation de suppression -->
+        <div class="modal fade" id="deleteCommentModal{{ commentaire.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-exclamation-triangle"></i> Confirmer la suppression
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ url_for('main.admin_delete_comment', comment_id=commentaire.id) }}">
+                        <div class="modal-body">
+                            <p>Êtes-vous sûr de vouloir supprimer ce commentaire ?</p>
+                            <div class="alert alert-light">
+                                <strong>Commentaire de {{ commentaire.utilisateur.username }} :</strong>
+                                <p class="mb-0 mt-2">"{{ commentaire.commentaire }}"</p>
+                            </div>
+                            <p class="text-muted">Sur la recette : <strong>{{ commentaire.recette.nom }}</strong></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Supprimer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Aucun commentaire pour le moment.
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> À propos de la modération</h5>
+                <ul class="mb-0">
+                    <li>Vous pouvez supprimer n'importe quel commentaire inapproprié</li>
+                    <li>Les utilisateurs peuvent modifier et supprimer leurs propres commentaires</li>
+                    <li>Les auteurs de recettes peuvent répondre aux commentaires sur leurs recettes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

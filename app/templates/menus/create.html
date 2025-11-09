@@ -129,6 +129,19 @@
 
                     <hr>
 
+                    <!-- Gâteaux -->
+                    <h4 class="mb-3"><i class="bi bi-cake2"></i> Gâteaux</h4>
+                    <p class="text-muted">Ajoutez des gâteaux à votre menu (hors planning quotidien)</p>
+
+                    <input type="hidden" name="gateau_count" id="gateau_count" value="0">
+                    <div id="gateaux_container"></div>
+
+                    <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="ajouterGateau()">
+                        <i class="bi bi-plus-circle"></i>
+                    </button>
+
+                    <hr>
+
                     <!-- Boutons -->
                     <div class="d-flex gap-2 justify-content-end">
                         <a href="{{ url_for('menus.index') }}" class="btn btn-outline-secondary">
@@ -173,6 +186,65 @@ document.addEventListener('DOMContentLoaded', function() {
             window.recipeSearchInstances[searchInputId] = searchInstance;
         }
     }
+
+    // Gestion des gâteaux
+    window.gateauIndex = 0;
 });
+
+function ajouterGateau() {
+    const container = document.getElementById('gateaux_container');
+    const index = window.gateauIndex;
+
+    const gateauCard = document.createElement('div');
+    gateauCard.className = 'card mb-3';
+    gateauCard.id = `gateau_card_${index}`;
+    gateauCard.innerHTML = `
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Gâteau ${index + 1}</h6>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="supprimerGateau(${index})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="mb-2">
+                <label for="search_gateau_${index}" class="form-label">Recette</label>
+                <input type="text"
+                       class="form-control recipe-search-input"
+                       id="search_gateau_${index}"
+                       placeholder="Rechercher une recette...">
+                <input type="hidden" name="gateau_${index}_recette" id="gateau_${index}_recette">
+            </div>
+            <div>
+                <label for="gateau_${index}_note" class="form-label">Note (optionnelle)</label>
+                <input type="text"
+                       class="form-control"
+                       name="gateau_${index}_note"
+                       id="gateau_${index}_note"
+                       placeholder="Ex: Pour le goûter du mercredi">
+            </div>
+        </div>
+    `;
+
+    container.appendChild(gateauCard);
+
+    // Initialiser la recherche de recette pour ce gâteau
+    const searchInstance = new RecipeSearch(`search_gateau_${index}`, `gateau_${index}_recette`, {
+        menuId: null,
+        typeRepas: null,  // Pas de filtre par type de repas pour les gâteaux
+        currentRecipeId: null,
+        placeholder: 'Rechercher une recette...'
+    });
+    window.recipeSearchInstances[`search_gateau_${index}`] = searchInstance;
+
+    window.gateauIndex++;
+    document.getElementById('gateau_count').value = window.gateauIndex;
+}
+
+function supprimerGateau(index) {
+    const card = document.getElementById(`gateau_card_${index}`);
+    if (card) {
+        card.remove();
+    }
+}
 </script>
 {% endblock %}

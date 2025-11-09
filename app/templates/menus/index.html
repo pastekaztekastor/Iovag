@@ -2,6 +2,10 @@
 
 {% block title %}Mes Menus{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/contextual-onboarding.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col">
@@ -12,7 +16,7 @@
     </div>
     <div class="col-auto">
         <a href="{{ url_for('menus.create') }}" class="btn btn-primary btn-lg">
-            <i class="bi bi-plus-circle"></i> Nouveau menu
+            <i class="bi bi-plus-circle"></i>
         </a>
     </div>
 </div>
@@ -103,4 +107,45 @@
     <a href="{{ url_for('menus.create') }}" class="alert-link">Créer mon premier menu</a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/contextual-onboarding.js') }}"></script>
+<script>
+// Onboarding contextuel
+{% if not current_user.onboarding_menus %}
+const menusSteps = [
+    {
+        target: 'h1',
+        title: 'Bienvenue dans vos menus !',
+        content: 'Les menus vous permettent de planifier vos repas pour la semaine. C\'est un outil puissant pour organiser vos courses et votre cuisine.',
+        icon: '📅',
+        position: 'bottom'
+    },
+    {
+        target: '.btn-primary',
+        title: 'Créer un nouveau menu',
+        content: 'Cliquez ici pour créer un menu hebdomadaire. Vous pourrez y planifier 7 jours de repas (petit-déjeuner, déjeuner, goûter, dîner) et même ajouter des gâteaux !',
+        icon: '➕',
+        position: 'left'
+    },
+    {
+        target: '#searchMenus',
+        title: 'Rechercher un menu',
+        content: 'Trouvez rapidement un menu par son nom ou son thème.',
+        icon: '🔍',
+        position: 'bottom'
+    },
+    {
+        target: '.btn-outline-success',
+        title: 'Générer la liste de courses',
+        content: 'Une fois votre menu créé, utilisez ce bouton pour générer automatiquement votre liste de courses. Tous les ingrédients seront calculés et groupés par rayon !',
+        icon: '🛒',
+        position: 'top'
+    }
+];
+
+initOnboarding('menus', true, menusSteps);
+{% endif %}
+</script>
 {% endblock %}

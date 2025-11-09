@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Conversions personnalisées{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            <i class="bi bi-arrow-left-right"></i> Conversions personnalisées par ingrédient
+        </h1>
+        <p class="lead text-muted">
+            Définissez des conversions spécifiques pour chaque ingrédient (ex: 1 pomme = 150g)
+        </p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('unites.conversion_create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nouvelle conversion
+        </a>
+        <a href="{{ url_for('unites.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour aux unités
+        </a>
+    </div>
+</div>
+
+{% if conversions %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Ingrédient</th>
+                        <th>Conversion</th>
+                        <th>Notes</th>
+                        <th>Dernière MAJ</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conversion in conversions %}
+                    <tr>
+                        <td><strong>{{ conversion.ingredient.nom }}</strong></td>
+                        <td>
+                            <span class="badge bg-primary">
+                                1 {{ conversion.unite_source.symbole }}
+                                =
+                                {{ conversion.facteur_conversion }} {{ conversion.unite_cible.symbole }}
+                            </span>
+                        </td>
+                        <td><small class="text-muted">{{ conversion.notes or '-' }}</small></td>
+                        <td><small class="text-muted">{{ conversion.updated_at.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('unites.conversion_edit', id=conversion.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('unites.conversion_delete', id=conversion.id) }}" style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Supprimer cette conversion ?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    Aucune conversion personnalisée définie. Créez-en une pour spécifier le poids ou volume
+    d'une pièce pour un ingrédient spécifique.
+</div>
+{% endif %}
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h5><i class="bi bi-lightbulb"></i> Exemples de conversions utiles</h5>
+        <ul>
+            <li>1 pomme = 150 g</li>
+            <li>1 œuf = 60 g</li>
+            <li>1 cuillère à soupe d'huile = 15 ml</li>
+            <li>1 gousse d'ail = 5 g</li>
+            <li>1 tomate = 120 g</li>
+        </ul>
+        <p class="text-muted mb-0">
+            Ces conversions permettent au système de calculer automatiquement les équivalences
+            et de gérer le stock de manière plus précise.
+        </p>
+    </div>
+</div>
+{% endblock %}

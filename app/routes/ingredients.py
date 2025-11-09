@@ -32,6 +32,7 @@ def create():
         duree_conservation = request.form.get('duree_conservation', type=int)
         lieu_rangement = request.form.get('lieu_rangement')
         stock_limite = request.form.get('stock_limite', type=float)
+        poids_estime_g = request.form.get('poids_estime_g', type=float)
         mois_saison = request.form.getlist('mois_saison')  # Liste de mois
 
         # Vérifier si l'ingrédient existe déjà
@@ -48,7 +49,8 @@ def create():
             unite_mesure=unite_mesure if unite_mesure else None,
             duree_conservation=duree_conservation if duree_conservation else None,
             lieu_rangement=lieu_rangement if lieu_rangement else None,
-            stock_limite=stock_limite if stock_limite else None
+            stock_limite=stock_limite if stock_limite else None,
+            poids_estime_g=poids_estime_g if poids_estime_g else None
         )
 
         # Définir les mois de saison
@@ -80,6 +82,7 @@ def edit(id):
         ingredient.duree_conservation = request.form.get('duree_conservation', type=int) or None
         ingredient.lieu_rangement = request.form.get('lieu_rangement') or None
         ingredient.stock_limite = request.form.get('stock_limite', type=float) or None
+        ingredient.poids_estime_g = request.form.get('poids_estime_g', type=float) or None
 
         # Récupérer et définir les mois de saison
         mois_saison = request.form.getlist('mois_saison')

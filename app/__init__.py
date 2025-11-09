@@ -49,7 +49,7 @@ def create_app(config_name=None):
     from app import models
 
     # Enregistrer les blueprints
-    from app.routes import auth, menus, recettes, courses, main, ingredients, stock, inventaires
+    from app.routes import auth, menus, recettes, courses, main, ingredients, stock, inventaires, unites
 
     app.register_blueprint(main.bp)
     app.register_blueprint(auth.bp)
@@ -59,6 +59,7 @@ def create_app(config_name=None):
     app.register_blueprint(ingredients.bp)
     app.register_blueprint(stock.bp)
     app.register_blueprint(inventaires.bp)
+    app.register_blueprint(unites.bp)
 
     # Gestionnaires d'erreurs
     @app.errorhandler(403)

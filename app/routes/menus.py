@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app import db
-from app.models import Menu, MenuJour, Recette
+from app.models import Menu, MenuJour, MenuGateau, Recette
 
 bp = Blueprint('menus', __name__, url_prefix='/menus')
 
@@ -73,6 +73,21 @@ def create():
                 )
                 db.session.add(menu_jour)
 
+        # Traiter les gâteaux
+        gateau_count = request.form.get('gateau_count', type=int, default=0)
+        for i in range(gateau_count):
+            recette_id = request.form.get(f'gateau_{i}_recette')
+            note = request.form.get(f'gateau_{i}_note', '')
+
+            if recette_id:
+                menu_gateau = MenuGateau(
+                    menu_id=menu.id,
+                    recette_id=int(recette_id),
+                    ordre=i,
+                    note=note if note else None
+                )
+                db.session.add(menu_gateau)
+
         db.session.commit()
         flash('Menu créé avec succès', 'success')
         return redirect(url_for('menus.detail', id=menu.id))
@@ -102,8 +117,9 @@ def edit(id):
         menu.theme = request.form.get('theme') or None
         menu.description = request.form.get('description') or None
 
-        # Supprimer les anciens jours
+        # Supprimer les anciens jours et gâteaux
         MenuJour.query.filter_by(menu_id=menu.id).delete()
+        MenuGateau.query.filter_by(menu_id=menu.id).delete()
 
         # Recréer les jours avec les nouvelles valeurs
         for jour in range(7):
@@ -123,6 +139,21 @@ def edit(id):
                     diner_id=int(diner_id) if diner_id else None
                 )
                 db.session.add(menu_jour)
+
+        # Traiter les gâteaux
+        gateau_count = request.form.get('gateau_count', type=int, default=0)
+        for i in range(gateau_count):
+            recette_id = request.form.get(f'gateau_{i}_recette')
+            note = request.form.get(f'gateau_{i}_note', '')
+
+            if recette_id:
+                menu_gateau = MenuGateau(
+                    menu_id=menu.id,
+                    recette_id=int(recette_id),
+                    ordre=i,
+                    note=note if note else None
+                )
+                db.session.add(menu_gateau)
 
         db.session.commit()
         flash('Menu modifié avec succès', 'success')

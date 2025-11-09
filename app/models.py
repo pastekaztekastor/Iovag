@@ -8,9 +8,17 @@ from app import db, login_manager
 
 
 class UnitConverter:
-    """Convertisseur d'unités pour normaliser les quantités d'ingrédients"""
+    """
+    Convertisseur d'unités pour normaliser les quantités d'ingrédients
+    Version 2: Utilise la base de données pour les conversions
+    """
 
-    # Table de conversion : unité -> (unité_base, facteur_multiplication)
+    # Cache pour les unités (pour éviter trop de requêtes DB)
+    _cache_unites = {}
+    _cache_initialized = False
+
+    # Table de conversion LEGACY : unité -> (unité_base, facteur_multiplication)
+    # Conservée pour compatibilité avec l'ancien système
     CONVERSIONS = {
         # Masse
         'kg': ('g', 1000),
@@ -33,33 +41,94 @@ class UnitConverter:
     }
 
     @classmethod
+    def _init_cache(cls):
+        """Initialise le cache des unités depuis la base de données"""
+        if cls._cache_initialized:
+            return
+
+        # Import ici pour éviter les imports circulaires
+        from app.models import Unite
+
+        try:
+            # Charger toutes les unités dans le cache
+            unites = Unite.query.all()
+            for unite in unites:
+                # Indexer par nom et par symbole
+                cls._cache_unites[unite.nom.lower()] = unite
+                cls._cache_unites[unite.symbole.lower()] = unite
+            cls._cache_initialized = True
+        except Exception:
+            # Si la table n'existe pas encore (migrations), utiliser le système legacy
+            cls._cache_initialized = False
+
+    @classmethod
+    def _get_unite_db(cls, nom_ou_symbole):
+        """
+        Récupère une unité depuis le cache/DB
+        Retourne None si non trouvée
+        """
+        cls._init_cache()
+        if not nom_ou_symbole:
+            return None
+        return cls._cache_unites.get(nom_ou_symbole.lower())
+
+    @classmethod
     def normaliser(cls, quantite, unite, ingredient=None):
         """
         Convertit une quantité dans son unité de base
-        Pour les fruits & légumes avec poids estimé, convertit pièce → g
+        Utilise la base de données en priorité, fallback sur CONVERSIONS legacy
 
         Args:
             quantite: La quantité à convertir
-            unite: L'unité actuelle
-            ingredient: Objet Ingredient (optionnel, pour conversion pièce ↔ g)
+            unite: L'unité actuelle (nom ou symbole)
+            ingredient: Objet Ingredient (optionnel, pour conversions spécifiques)
 
         Returns:
-            tuple (quantite_normalisee, unite_base)
+            tuple (quantite_normalisee, unite_base_symbole)
         """
         if not unite:
             return quantite, None
 
+        # 1. Chercher si on a une conversion personnalisée pour cet ingrédient
+        if ingredient:
+            try:
+                from app.models import IngredientConversionUnite, Unite
+
+                # Trouver l'unité source
+                unite_source = cls._get_unite_db(unite)
+
+                if unite_source and unite_source.type_unite == 'unitaire':
+                    # Chercher une conversion personnalisée depuis cette unité
+                    conversion = IngredientConversionUnite.query.filter_by(
+                        ingredient_id=ingredient.id,
+                        unite_source_id=unite_source.id
+                    ).first()
+
+                    if conversion:
+                        # Utiliser la conversion personnalisée
+                        quantite_convertie = conversion.convertir(quantite)
+                        return quantite_convertie, conversion.unite_cible.symbole
+
+                # Fallback: utiliser poids_estime_g pour pièce → g (legacy)
+                if unite.lower() == 'pièce' and ingredient.poids_estime_g:
+                    return quantite * ingredient.poids_estime_g, 'g'
+            except Exception:
+                pass  # Continuer avec le système de DB normal
+
+        # 2. Utiliser le système de DB pour les unités standards
+        unite_obj = cls._get_unite_db(unite)
+        if unite_obj:
+            unite_base = unite_obj.get_unite_base()
+            quantite_normalisee = unite_obj.convertir_vers_base(quantite)
+            return quantite_normalisee, unite_base.symbole
+
+        # 3. Fallback sur l'ancien système CONVERSIONS
         unite_lower = unite.lower()
-
-        # Si c'est une pièce et qu'on a un poids estimé, convertir en grammes
-        if unite_lower == 'pièce' and ingredient and ingredient.poids_estime_g:
-            return quantite * ingredient.poids_estime_g, 'g'
-
         if unite_lower in cls.CONVERSIONS:
             unite_base, facteur = cls.CONVERSIONS[unite_lower]
             return quantite * facteur, unite_base
 
-        # Si l'unité n'est pas reconnue, retourner telle quelle
+        # 4. Si rien ne fonctionne, retourner tel quel
         return quantite, unite
 
     @classmethod
@@ -131,6 +200,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_admin = db.Column(db.Boolean, default=False)
     onboarding_completed = db.Column(db.Boolean, default=False)
+    onboarding_recettes = db.Column(db.Boolean, default=False)
+    onboarding_menus = db.Column(db.Boolean, default=False)
+    onboarding_courses = db.Column(db.Boolean, default=False)
 
     # Relations
     recettes = db.relationship('Recette', backref='auteur', lazy='dynamic', cascade='all, delete-orphan', foreign_keys='Recette.created_by')
@@ -243,6 +315,8 @@ class Recette(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(200), nullable=False, index=True)
     portions = db.Column(db.Integer, default=4)  # Nombre de portions de base
+    portions_min = db.Column(db.Integer)  # Portions minimales (si la recette est indivisible)
+    est_divisible = db.Column(db.Boolean, default=True)  # Si False, on ne peut pas réduire les portions
     temps_preparation = db.Column(db.String(50))  # Ex: "15 min"
     temps_cuisson = db.Column(db.String(50))  # Ex: "30 min"
     evaluation = db.Column(db.Integer, default=0)  # 0-5 étoiles
@@ -332,8 +406,58 @@ class Recette(db.Model):
 
         return ingredients_ajustes
 
+    def get_portions_min(self):
+        """
+        Retourne le nombre de portions minimales pour cette recette
+        Si la recette est indivisible, retourne portions_min ou portions
+        Sinon retourne 1
+        """
+        if not self.est_divisible:
+            return self.portions_min if self.portions_min else self.portions
+        return 1
+
+    def valider_portions(self, nb_portions):
+        """
+        Valide qu'un nombre de portions est acceptable pour cette recette
+
+        Args:
+            nb_portions: Nombre de portions demandé
+
+        Returns:
+            tuple (est_valide: bool, message: str, portions_min: int)
+        """
+        min_portions = self.get_portions_min()
+
+        if nb_portions < min_portions:
+            if not self.est_divisible:
+                return (False, f"Cette recette nécessite au minimum {min_portions} portions (recette indivisible)", min_portions)
+            else:
+                return (False, f"Le nombre minimum de portions est {min_portions}", min_portions)
+
+        return (True, "", min_portions)
+
     def __repr__(self):
         return f'<Recette {self.nom}>'
+
+
+class RecetteCommentaire(db.Model):
+    """Commentaires sur les recettes"""
+    __tablename__ = 'recette_commentaires'
+
+    id = db.Column(db.Integer, primary_key=True)
+    recette_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    commentaire = db.Column(db.Text, nullable=False)
+    reponse_auteur = db.Column(db.Text)  # Réponse de l'auteur de la recette
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relations
+    recette = db.relationship('Recette', backref=db.backref('commentaires', lazy='dynamic', cascade='all, delete-orphan'))
+    utilisateur = db.relationship('User', backref='commentaires_recettes')
+
+    def __repr__(self):
+        return f'<RecetteCommentaire de {self.utilisateur.username}>'
 
 
 class RecetteIngredient(db.Model):
@@ -406,6 +530,7 @@ class Menu(db.Model):
 
     # Relations
     jours = db.relationship('MenuJour', backref='menu', lazy='dynamic', cascade='all, delete-orphan', order_by='MenuJour.jour_semaine')
+    gateaux = db.relationship('MenuGateau', backref='menu', lazy='dynamic', cascade='all, delete-orphan', order_by='MenuGateau.ordre')
     listes_courses = db.relationship('ListeCourse', backref='menu', lazy='dynamic', cascade='all, delete-orphan')
 
     def generer_liste_courses(self):
@@ -440,6 +565,27 @@ class Menu(db.Model):
                                 'quantite': quantite_normalisee,
                                 'unite': unite_base
                             }
+
+        # Parcourir les gâteaux
+        for menu_gateau in self.gateaux:
+            recette = menu_gateau.recette
+            if recette:
+                # Calculer les ingrédients ajustés pour le nombre de personnes du menu
+                ingredients_ajustes = recette.get_ingredients_for_portions(self.nb_personnes)
+
+                for ingredient, quantite, unite in ingredients_ajustes:
+                    # Normaliser l'unité pour regrouper les quantités
+                    quantite_normalisee, unite_base = UnitConverter.normaliser(quantite, unite, ingredient)
+
+                    key = (ingredient.id, unite_base)
+                    if key in ingredients_totaux:
+                        ingredients_totaux[key]['quantite'] += quantite_normalisee
+                    else:
+                        ingredients_totaux[key] = {
+                            'ingredient': ingredient,
+                            'quantite': quantite_normalisee,
+                            'unite': unite_base
+                        }
 
         # Créer une nouvelle liste de courses
         from datetime import datetime
@@ -498,6 +644,23 @@ class MenuJour(db.Model):
 
     def __repr__(self):
         return f'<MenuJour {self.nom_jour}>'
+
+
+class MenuGateau(db.Model):
+    """Modèle gâteau dans un menu"""
+    __tablename__ = 'menu_gateaux'
+
+    id = db.Column(db.Integer, primary_key=True)
+    menu_id = db.Column(db.Integer, db.ForeignKey('menus.id'), nullable=False)
+    recette_id = db.Column(db.Integer, db.ForeignKey('recettes.id'), nullable=False)
+    ordre = db.Column(db.Integer, default=0)  # Pour trier les gâteaux
+    note = db.Column(db.String(200))  # Note optionnelle (ex: "Pour le goûter du mercredi")
+
+    # Relations
+    recette = db.relationship('Recette', foreign_keys=[recette_id])
+
+    def __repr__(self):
+        return f'<MenuGateau {self.recette.nom if self.recette else "Sans recette"}>'
 
 
 class ListeCourse(db.Model):
@@ -863,3 +1026,88 @@ class ContactMessage(db.Model):
             'read': self.read,
             'replied': self.replied
         }
+
+
+class Unite(db.Model):
+    """Modèle pour la gestion des unités de mesure"""
+    __tablename__ = 'unites'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(50), nullable=False, unique=True)  # g, kg, ml, l, pièce, cuillère à soupe, etc.
+    symbole = db.Column(db.String(20), nullable=False)  # g, kg, ml, L, cs, cc, etc.
+    type_unite = db.Column(db.String(20), nullable=False)  # masse, volume, unitaire
+    unite_base_id = db.Column(db.Integer, db.ForeignKey('unites.id'), nullable=True)  # Référence à l'unité de base
+    facteur_vers_base = db.Column(db.Float, default=1.0)  # Facteur de conversion vers l'unité de base
+    description = db.Column(db.String(200))  # Description optionnelle
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relations
+    unite_base = db.relationship('Unite', remote_side=[id], backref='unites_derivees')
+    conversions_source = db.relationship('IngredientConversionUnite',
+                                        foreign_keys='IngredientConversionUnite.unite_source_id',
+                                        backref='unite_source',
+                                        lazy='dynamic',
+                                        cascade='all, delete-orphan')
+    conversions_cible = db.relationship('IngredientConversionUnite',
+                                       foreign_keys='IngredientConversionUnite.unite_cible_id',
+                                       backref='unite_cible',
+                                       lazy='dynamic',
+                                       cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f'<Unite {self.nom} ({self.symbole})>'
+
+    def get_unite_base(self):
+        """Retourne l'unité de base (elle-même si c'est une unité de base)"""
+        if self.unite_base_id is None:
+            return self
+        return self.unite_base
+
+    def convertir_vers_base(self, quantite):
+        """Convertit une quantité de cette unité vers l'unité de base"""
+        return quantite * self.facteur_vers_base
+
+    def convertir_depuis_base(self, quantite):
+        """Convertit une quantité depuis l'unité de base vers cette unité"""
+        if self.facteur_vers_base == 0:
+            return 0
+        return quantite / self.facteur_vers_base
+
+
+class IngredientConversionUnite(db.Model):
+    """
+    Table de conversion spécifique par ingrédient
+    Permet de définir des conversions personnalisées (ex: 1 pièce de pomme = 150g)
+    """
+    __tablename__ = 'ingredient_conversion_unites'
+
+    id = db.Column(db.Integer, primary_key=True)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredients.id', ondelete='CASCADE'), nullable=False)
+    unite_source_id = db.Column(db.Integer, db.ForeignKey('unites.id'), nullable=False)  # Ex: pièce
+    unite_cible_id = db.Column(db.Integer, db.ForeignKey('unites.id'), nullable=False)  # Ex: g
+    facteur_conversion = db.Column(db.Float, nullable=False)  # Ex: 1 pièce = 150g
+    notes = db.Column(db.String(200))  # Notes optionnelles sur la conversion
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relations
+    ingredient = db.relationship('Ingredient', backref='conversions_unites')
+
+    # Contrainte d'unicité : un seul facteur de conversion par ingrédient/unite_source/unite_cible
+    __table_args__ = (
+        db.UniqueConstraint('ingredient_id', 'unite_source_id', 'unite_cible_id',
+                          name='uq_ingredient_conversion'),
+    )
+
+    def __repr__(self):
+        return f'<IngredientConversionUnite {self.ingredient.nom}: 1 {self.unite_source.symbole} = {self.facteur_conversion} {self.unite_cible.symbole}>'
+
+    def convertir(self, quantite):
+        """Convertit une quantité de l'unité source vers l'unité cible"""
+        return quantite * self.facteur_conversion
+
+    def convertir_inverse(self, quantite):
+        """Convertit une quantité de l'unité cible vers l'unité source"""
+        if self.facteur_conversion == 0:
+            return 0
+        return quantite / self.facteur_conversion

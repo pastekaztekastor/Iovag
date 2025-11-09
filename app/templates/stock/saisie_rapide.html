@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block title %}Saisie rapide du stock{% endblock %}
+
+{% block extra_css %}
+<style>
+.saisie-container {
+    display: flex;
+    height: calc(100vh - 150px);
+}
+
+.sidebar {
+    width: 300px;
+    border-right: 2px solid #dee2e6;
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.sidebar-lieu {
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-lieu h6 {
+    color: #6c757d;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.ingredient-item {
+    padding: 0.5rem;
+    margin-bottom: 0.3rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.ingredient-item:hover {
+    background-color: #e9ecef;
+}
+
+.ingredient-item.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.ingredient-item.done {
+    background-color: #198754;
+    color: white;
+}
+
+.ingredient-item.done i {
+    float: right;
+}
+
+.main-saisie {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.ingredient-display {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.ingredient-name {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #0d6efd;
+    margin-bottom: 1rem;
+}
+
+.ingredient-info {
+    font-size: 1.2rem;
+    color: #6c757d;
+}
+
+.quantite-input {
+    text-align: center;
+    font-size: 4rem;
+    font-weight: bold;
+    border: 3px solid #0d6efd;
+    border-radius: 10px;
+    padding: 1rem;
+    width: 400px;
+    margin-bottom: 2rem;
+}
+
+.unite-selector {
+    margin-bottom: 2rem;
+}
+
+.unite-selector .btn {
+    font-size: 1.5rem;
+    padding: 1rem 2rem;
+    margin: 0 0.5rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.action-buttons .btn {
+    font-size: 1.5rem;
+    padding: 1rem 3rem;
+}
+
+.progress-bar-container {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 2rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h1><i class="bi bi-speedometer2"></i> Saisie rapide du stock</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour au stock
+            </a>
+            <a href="{{ url_for('stock.add') }}" class="btn btn-success" id="btn-add-ingredient">
+                <i class="bi bi-plus-circle"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="saisie-container">
+        <!-- Barre latérale -->
+        <div class="sidebar">
+            {% for lieu, items in ingredients_par_lieu.items() %}
+            <div class="sidebar-lieu">
+                <h6>{{ lieu }}</h6>
+                {% for item in items %}
+                <div class="ingredient-item"
+                     data-ingredient-id="{{ item.ingredient.id }}"
+                     data-ingredient-nom="{{ item.ingredient.nom }}"
+                     data-ingredient-unite="{{ item.ingredient.unite_mesure or 'g' }}"
+                     data-stock-quantite="{{ item.stock.quantite if item.stock else '' }}"
+                     data-stock-unite="{{ item.stock.unite if item.stock else '' }}">
+                    {{ item.ingredient.nom }}
+                    {% if item.stock %}
+                    <i class="bi bi-check-circle"></i>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Interface principale -->
+        <div class="main-saisie">
+            <div class="progress-bar-container">
+                <div class="progress" style="height: 30px;">
+                    <div class="progress-bar bg-success" role="progressbar" id="progress-bar" style="width: 0%">
+                        <span id="progress-text">0 / 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ingredient-display" id="ingredient-display">
+                <div class="ingredient-name" id="ingredient-name">Sélectionnez un ingrédient</div>
+                <div class="ingredient-info" id="ingredient-info"></div>
+            </div>
+
+            <input type="number"
+                   class="form-control quantite-input"
+                   id="quantite-input"
+                   placeholder="0"
+                   step="any"
+                   min="0"
+                   autocomplete="off">
+
+            <div class="unite-selector">
+                <button type="button" class="btn btn-outline-primary unite-btn" data-unite="kg">
+                    <i class="bi bi-basket"></i> Kilogrammes (kg)
+                </button>
+                <button type="button" class="btn btn-outline-primary unite-btn active" data-unite="g">
+                    <i class="bi bi-basket"></i> Grammes (g)
+                </button>
+                <button type="button" class="btn btn-outline-primary unite-btn" data-unite="pièce">
+                    <i class="bi bi-123"></i> Pièces
+                </button>
+            </div>
+
+            <div class="action-buttons">
+                <button type="button" class="btn btn-secondary" id="btn-skip">
+                    <i class="bi bi-skip-forward"></i> Passer
+                </button>
+                <button type="button" class="btn btn-success" id="btn-save">
+                    <i class="bi bi-check-circle"></i> Enregistrer
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-save-next">
+                    <i class="bi bi-arrow-right-circle"></i> Suivant
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentIngredientId = null;
+let currentIngredientNom = '';
+let currentUnite = 'g';
+let ingredientsList = [];
+let currentIndex = -1;
+let completedCount = 0;
+
+// Initialiser la liste des ingrédients
+document.querySelectorAll('.ingredient-item').forEach((item, index) => {
+    ingredientsList.push({
+        element: item,
+        id: parseInt(item.dataset.ingredientId),
+        nom: item.dataset.ingredientNom,
+        unite: item.dataset.ingredientUnite || 'g',
+        stockQuantite: item.dataset.stockQuantite,
+        stockUnite: item.dataset.stockUnite
+    });
+
+    // Marquer comme "done" si déjà en stock
+    if (item.dataset.stockQuantite) {
+        item.classList.add('done');
+        completedCount++;
+    }
+
+    // Click handler
+    item.addEventListener('click', () => {
+        selectIngredient(index);
+    });
+});
+
+// Update progress bar
+function updateProgress() {
+    const total = ingredientsList.length;
+    const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+    document.getElementById('progress-bar').style.width = percentage + '%';
+    document.getElementById('progress-text').textContent = `${completedCount} / ${total}`;
+}
+
+updateProgress();
+
+// Select ingredient
+function selectIngredient(index) {
+    if (index < 0 || index >= ingredientsList.length) return;
+
+    currentIndex = index;
+    const ingredient = ingredientsList[index];
+    currentIngredientId = ingredient.id;
+    currentIngredientNom = ingredient.nom;
+
+    // Update UI
+    document.querySelectorAll('.ingredient-item').forEach(item => item.classList.remove('active'));
+    ingredient.element.classList.add('active');
+
+    document.getElementById('ingredient-name').textContent = ingredient.nom;
+    document.getElementById('ingredient-info').textContent = `Unité suggérée : ${ingredient.unite}`;
+
+    // Set current stock if exists
+    if (ingredient.stockQuantite) {
+        document.getElementById('quantite-input').value = ingredient.stockQuantite;
+        currentUnite = ingredient.stockUnite || ingredient.unite;
+    } else {
+        document.getElementById('quantite-input').value = '';
+        currentUnite = ingredient.unite;
+    }
+
+    // Update unite buttons
+    document.querySelectorAll('.unite-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.unite === currentUnite) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Focus on input
+    document.getElementById('quantite-input').focus();
+    document.getElementById('quantite-input').select();
+}
+
+// Select next ingredient
+function selectNextIngredient() {
+    let nextIndex = currentIndex + 1;
+    if (nextIndex >= ingredientsList.length) {
+        alert('Vous avez parcouru tous les ingrédients !');
+        return;
+    }
+    selectIngredient(nextIndex);
+}
+
+// Unite buttons
+document.querySelectorAll('.unite-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.unite-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentUnite = this.dataset.unite;
+    });
+});
+
+// Save current ingredient
+async function saveIngredient(andNext = false) {
+    const quantite = parseFloat(document.getElementById('quantite-input').value);
+
+    if (!quantite || quantite <= 0) {
+        alert('Veuillez entrer une quantité valide');
+        return;
+    }
+
+    if (!currentIngredientId) {
+        alert('Veuillez sélectionner un ingrédient');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('ingredient_id', currentIngredientId);
+    formData.append('quantite', quantite);
+    formData.append('unite', currentUnite);
+
+    try {
+        const response = await fetch('{{ url_for("stock.saisie_rapide_save") }}', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Mark as done
+            const currentItem = ingredientsList[currentIndex];
+            if (!currentItem.element.classList.contains('done')) {
+                currentItem.element.classList.add('done');
+                completedCount++;
+                updateProgress();
+            }
+
+            // Update stock data
+            currentItem.stockQuantite = quantite;
+            currentItem.stockUnite = currentUnite;
+
+            // Add check icon if not present
+            if (!currentItem.element.querySelector('.bi-check-circle')) {
+                currentItem.element.innerHTML += ' <i class="bi bi-check-circle"></i>';
+            }
+
+            if (andNext) {
+                selectNextIngredient();
+            }
+        } else {
+            alert('Erreur lors de l\'enregistrement');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Erreur de connexion');
+    }
+}
+
+// Event listeners
+document.getElementById('btn-save').addEventListener('click', () => saveIngredient(false));
+document.getElementById('btn-save-next').addEventListener('click', () => saveIngredient(true));
+document.getElementById('btn-skip').addEventListener('click', selectNextIngredient);
+
+// Enter key to save and next
+document.getElementById('quantite-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        saveIngredient(true);
+    }
+});
+
+// Select first ingredient automatically
+if (ingredientsList.length > 0) {
+    selectIngredient(0);
+}
+</script>
+{% endblock %}

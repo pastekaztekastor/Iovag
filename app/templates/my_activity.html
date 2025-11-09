@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Mon activité{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-activity"></i> Mon activité
+        </h1>
+        <p class="lead text-muted">Vos recettes reprises et commentaires reçus</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('main.profile') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Retour au profil
+        </a>
+    </div>
+</div>
+
+<!-- Recettes reprises -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="bi bi-heart-fill text-danger"></i> Mes recettes sauvegardées par d'autres
+            <span class="badge bg-danger">{{ recettes_reprises|length }}</span>
+        </h2>
+
+        {% if recettes_reprises %}
+        <div class="row">
+            {% for item in recettes_reprises %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="{{ url_for('recettes.detail', id=item.recette.id) }}" class="text-decoration-none">
+                                {{ item.recette.nom }}
+                            </a>
+                        </h5>
+
+                        <div class="alert alert-success mb-3">
+                            <i class="bi bi-people"></i>
+                            <strong>{{ item.nb_sauvegardes }}</strong> personne(s) ont sauvegardé cette recette
+                        </div>
+
+                        <h6>Sauvegardée par :</h6>
+                        <ul class="list-unstyled">
+                            {% for user in item.utilisateurs[:5] %}
+                            <li><i class="bi bi-person-circle"></i> {{ user.username }}</li>
+                            {% endfor %}
+                            {% if item.nb_sauvegardes > 5 %}
+                            <li class="text-muted"><small>... et {{ item.nb_sauvegardes - 5 }} autre(s)</small></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white">
+                        <small class="text-muted">
+                            <i class="bi bi-star-fill"></i> {{ item.recette.evaluation }}/5 |
+                            <i class="bi bi-chat-dots"></i> {{ item.recette.commentaires.count() }} commentaire(s)
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            Aucune de vos recettes n'a encore été sauvegardée par d'autres utilisateurs.
+            <p class="mb-0 mt-2">
+                Partagez vos meilleures recettes en les rendant publiques !
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<hr class="my-5">
+
+<!-- Commentaires reçus -->
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="bi bi-chat-dots text-primary"></i> Commentaires reçus sur mes recettes
+            <span class="badge bg-primary">{{ commentaires_recus|length }}</span>
+        </h2>
+
+        {% if commentaires_recus %}
+        {% for commentaire in commentaires_recus %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-person-circle"></i> <strong>{{ commentaire.utilisateur.username }}</strong>
+                        a commenté
+                        <a href="{{ url_for('recettes.detail', id=commentaire.recette.id) }}" class="text-decoration-none">
+                            <i class="bi bi-book"></i> {{ commentaire.recette.nom }}
+                        </a>
+                    </div>
+                    <small class="text-muted">
+                        {{ commentaire.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                    </small>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ commentaire.commentaire }}</p>
+
+                {% if commentaire.reponse_auteur %}
+                <div class="alert alert-success mb-0">
+                    <strong><i class="bi bi-reply"></i> Votre réponse :</strong>
+                    <p class="mb-0 mt-2">{{ commentaire.reponse_auteur }}</p>
+                </div>
+                {% else %}
+                <div class="alert alert-light">
+                    <i class="bi bi-info-circle"></i> Vous n'avez pas encore répondu à ce commentaire.
+                    <a href="{{ url_for('recettes.detail', id=commentaire.recette.id) }}#commentaire-{{ commentaire.id }}" class="alert-link">
+                        Répondre maintenant
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{{ url_for('recettes.detail', id=commentaire.recette.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Voir la recette
+                        </a>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reportModal{{ commentaire.id }}">
+                            <i class="bi bi-flag"></i> Signaler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de signalement -->
+        <div class="modal fade" id="reportModal{{ commentaire.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-flag"></i> Signaler un commentaire inapproprié
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Commentaire de {{ commentaire.utilisateur.username }} :</strong></p>
+                        <div class="alert alert-light">
+                            "{{ commentaire.commentaire }}"
+                        </div>
+                        <p>Ce commentaire sera signalé aux administrateurs pour modération.</p>
+                        <p class="text-muted">
+                            <small>
+                                <i class="bi bi-info-circle"></i>
+                                Les administrateurs examineront ce commentaire et prendront les mesures appropriées si nécessaire.
+                            </small>
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-danger" onclick="reportComment({{ commentaire.id }})" data-bs-dismiss="modal">
+                            <i class="bi bi-flag"></i> Signaler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            Vous n'avez pas encore reçu de commentaires sur vos recettes.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if not recettes_reprises and not commentaires_recus %}
+<div class="card mt-4">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-book display-1 text-muted mb-3"></i>
+        <h5 class="card-title">Commencez à partager vos recettes !</h5>
+        <p class="card-text text-muted">
+            Créez des recettes publiques et laissez la communauté les découvrir, les sauvegarder et les commenter.
+        </p>
+        <a href="{{ url_for('recettes.create') }}" class="btn btn-primary mt-3">
+            <i class="bi bi-plus-circle"></i> Créer une recette
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function reportComment(commentId) {
+    // Ici, vous pourriez ajouter une vraie fonctionnalité de signalement
+    // Pour l'instant, juste un message de confirmation
+    alert('Commentaire signalé aux administrateurs. Merci pour votre vigilance !');
+
+    // En production, vous feriez un fetch() vers une route backend
+    // qui enregistrerait le signalement en base de données
+}
+</script>
+{% endblock %}

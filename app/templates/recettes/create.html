@@ -70,6 +70,31 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="form-label">Portions minimales</label>
+                        <p class="text-muted small">Pour les recettes qui ne peuvent pas être divisées (comme un gâteau entier), spécifiez le nombre de portions minimales.</p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="est_divisible" id="est_divisible" checked>
+                                    <label class="form-check-label" for="est_divisible">
+                                        <strong>La recette est divisible</strong>
+                                    </label>
+                                    <div class="form-text">
+                                        Décochez si cette recette ne peut pas être réduite en portions (ex: gâteau, tarte).
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="portions-min-container">
+                                <label for="portions_min" class="form-label">Portions minimales</label>
+                                <input type="number" class="form-control" id="portions_min" name="portions_min" min="1" placeholder="Ex: 6">
+                                <div class="form-text">
+                                    Laisser vide pour utiliser le nombre de portions par défaut.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
                         <label class="form-label">Mois de saison</label>
                         <p class="text-muted small">Les mois seront calculés automatiquement selon les ingrédients. Vous pouvez les modifier si besoin.</p>
                         <div class="row">
@@ -144,7 +169,7 @@
                         </div>
                     </div>
                     <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add-ingredient">
-                        <i class="bi bi-plus-circle"></i> Ajouter un ingrédient
+                        <i class="bi bi-plus-circle"></i>
                     </button>
 
                     <!-- Datalist pour l'autocomplétion des ingrédients -->
@@ -170,7 +195,7 @@
                         </div>
                     </div>
                     <button type="button" class="btn btn-outline-primary btn-sm mb-4" id="add-instruction">
-                        <i class="bi bi-plus-circle"></i> Ajouter une étape
+                        <i class="bi bi-plus-circle"></i>
                     </button>
 
                     <hr>
@@ -341,6 +366,24 @@ function updateInstructionNumbers() {
         row.querySelector('.input-group-text').textContent = (index + 1) + '.';
     });
     instructionCount = instructionRows.length;
+}
+
+// Gérer l'affichage du champ portions_min selon est_divisible
+const estDivisibleCheckbox = document.getElementById('est_divisible');
+const portionsMinContainer = document.getElementById('portions-min-container');
+
+function togglePortionsMin() {
+    if (estDivisibleCheckbox.checked) {
+        portionsMinContainer.style.display = 'none';
+        document.getElementById('portions_min').value = '';
+    } else {
+        portionsMinContainer.style.display = 'block';
+    }
+}
+
+if (estDivisibleCheckbox) {
+    estDivisibleCheckbox.addEventListener('change', togglePortionsMin);
+    togglePortionsMin(); // Initial state
 }
 </script>
 {% endblock %}

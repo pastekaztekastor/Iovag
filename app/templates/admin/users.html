@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des utilisateurs{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-people"></i> Gestion des utilisateurs
+        </h1>
+        <p class="lead text-muted">{{ users_stats|length }} utilisateur(s) enregistré(s)</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Email</th>
+                        <th>Statut</th>
+                        <th>Inscrit le</th>
+                        <th>Recettes</th>
+                        <th>Menus</th>
+                        <th>Stock</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stats in users_stats %}
+                    <tr {% if stats.user.id == current_user.id %}class="table-primary"{% endif %}>
+                        <td>
+                            <i class="bi bi-person-circle"></i> {{ stats.user.username }}
+                            {% if stats.user.id == current_user.id %}
+                            <span class="badge bg-info">Vous</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ stats.user.email }}</td>
+                        <td>
+                            {% if stats.user.is_admin %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-shield-check"></i> Admin
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">Utilisateur</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ stats.user.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td><span class="badge bg-primary">{{ stats.nb_recettes }}</span></td>
+                        <td><span class="badge bg-success">{{ stats.nb_menus }}</span></td>
+                        <td><span class="badge bg-info">{{ stats.nb_stock }}</span></td>
+                        <td>
+                            {% if stats.user.id != current_user.id %}
+                            <div class="btn-group btn-group-sm" role="group">
+                                <!-- Toggle Admin -->
+                                <form method="POST" action="{{ url_for('main.admin_toggle_admin', user_id=stats.user.id) }}" style="display: inline;">
+                                    {% if stats.user.is_admin %}
+                                    <button type="submit" class="btn btn-outline-warning" title="Retirer les droits admin">
+                                        <i class="bi bi-shield-slash"></i>
+                                    </button>
+                                    {% else %}
+                                    <button type="submit" class="btn btn-outline-success" title="Promouvoir admin">
+                                        <i class="bi bi-shield-check"></i>
+                                    </button>
+                                    {% endif %}
+                                </form>
+
+                                <!-- Delete User -->
+                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ stats.user.id }}" title="Supprimer l'utilisateur">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+
+                            <!-- Modal de confirmation de suppression -->
+                            <div class="modal fade" id="deleteUserModal{{ stats.user.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title">
+                                                <i class="bi bi-exclamation-triangle"></i> Confirmer la suppression
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="POST" action="{{ url_for('main.admin_delete_user', user_id=stats.user.id) }}">
+                                            <div class="modal-body">
+                                                <p>Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{{ stats.user.username }}</strong> ?</p>
+                                                <p class="text-muted">Cette action supprimera également :</p>
+                                                <ul>
+                                                    <li>{{ stats.nb_recettes }} recette(s)</li>
+                                                    <li>{{ stats.nb_menus }} menu(s)</li>
+                                                    <li>{{ stats.nb_stock }} article(s) en stock</li>
+                                                    <li>Toutes ses listes de courses</li>
+                                                    <li>Tous ses commentaires</li>
+                                                </ul>
+                                                <div class="alert alert-danger">
+                                                    <strong>Attention :</strong> Cette action est irréversible.
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-danger">
+                                                    <i class="bi bi-trash"></i> Supprimer
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-muted"><i class="bi bi-lock"></i> Votre compte</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> Informations</h5>
+                <ul>
+                    <li>Les administrateurs ont accès à toutes les fonctionnalités de gestion</li>
+                    <li>Seul le compte "mathurin" est administrateur permanent</li>
+                    <li>Vous ne pouvez pas modifier ou supprimer votre propre compte depuis cette interface</li>
+                    <li>La suppression d'un utilisateur supprime toutes ses données (recettes, menus, stock, etc.)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

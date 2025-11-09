@@ -2,6 +2,10 @@
 
 {% block title %}Mes Listes de Courses{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/contextual-onboarding.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col">
@@ -97,4 +101,52 @@
     <a href="{{ url_for('menus.index') }}" class="alert-link">Créer un menu pour générer une liste</a>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/contextual-onboarding.js') }}"></script>
+<script>
+// Onboarding contextuel
+{% if not current_user.onboarding_courses %}
+const coursesSteps = [
+    {
+        target: 'h1',
+        title: 'Bienvenue dans vos listes de courses !',
+        content: 'Gérez toutes vos listes de courses ici. Elles peuvent être générées automatiquement depuis vos menus ou créées manuellement.',
+        icon: '🛒',
+        position: 'bottom'
+    },
+    {
+        target: '#searchListes',
+        title: 'Rechercher une liste',
+        content: 'Retrouvez rapidement une liste de courses par son nom.',
+        icon: '🔍',
+        position: 'bottom'
+    },
+    {
+        target: '#filterStatus',
+        title: 'Filtrer par statut',
+        content: 'Filtrez vos listes selon leur avancement : brouillon, validée, en cours ou terminée.',
+        icon: '📊',
+        position: 'bottom'
+    },
+    {
+        target: '.progress',
+        title: 'Suivez votre progression',
+        content: 'Cette barre de progression montre combien d\'articles vous avez déjà achetés. Pratique pour faire vos courses !',
+        icon: '✅',
+        position: 'top'
+    },
+    {
+        target: '.btn-outline-secondary',
+        title: 'Exporter en PDF',
+        content: 'Téléchargez votre liste au format PDF pour l\'imprimer ou la consulter hors ligne pendant vos courses.',
+        icon: '📄',
+        position: 'top'
+    }
+];
+
+initOnboarding('courses', true, coursesSteps);
+{% endif %}
+</script>
 {% endblock %}

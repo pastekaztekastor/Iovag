@@ -2,6 +2,10 @@
 
 {% block title %}Mes Recettes{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/contextual-onboarding.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col">
@@ -11,8 +15,11 @@
         <p class="lead text-muted">{{ recettes|length }} recette(s)</p>
     </div>
     <div class="col-auto">
+        <a href="{{ url_for('recettes.possibles') }}" class="btn btn-success btn-lg me-2">
+            <i class="bi bi-magic"></i> Recettes possibles
+        </a>
         <a href="{{ url_for('recettes.create') }}" class="btn btn-primary btn-lg">
-            <i class="bi bi-plus-circle"></i> Nouvelle recette
+            <i class="bi bi-plus-circle"></i>
         </a>
     </div>
 </div>
@@ -109,6 +116,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', filename='js/contextual-onboarding.js') }}"></script>
 <script>
 // Variables globales pour les filtres
 let saisonFilterActive = false;
@@ -234,5 +242,48 @@ if (searchInput) {
 if (evalSelect) {
     evalSelect.addEventListener('change', applyFilters);
 }
+
+// Onboarding contextuel
+{% if not current_user.onboarding_recettes %}
+const recettesSteps = [
+    {
+        target: 'h1',
+        title: 'Bienvenue dans vos recettes !',
+        content: 'Ici, vous pouvez gérer toutes vos recettes préférées. Découvrez les fonctionnalités principales.',
+        icon: '📖',
+        position: 'bottom'
+    },
+    {
+        target: '.btn-primary',
+        title: 'Créer une nouvelle recette',
+        content: 'Cliquez sur ce bouton pour ajouter une nouvelle recette à votre collection. Vous pourrez y ajouter des ingrédients, des instructions et bien plus.',
+        icon: '➕',
+        position: 'left'
+    },
+    {
+        target: '#searchRecettes',
+        title: 'Rechercher vos recettes',
+        content: 'Utilisez cette barre de recherche pour trouver rapidement une recette par son nom.',
+        icon: '🔍',
+        position: 'bottom'
+    },
+    {
+        target: '#filterEvaluation',
+        title: 'Filtrer par note',
+        content: 'Filtrez vos recettes selon leur évaluation pour retrouver vos coups de cœur.',
+        icon: '⭐',
+        position: 'bottom'
+    },
+    {
+        target: '#filterSaison',
+        title: 'Recettes de saison',
+        content: 'Activez ce filtre pour voir uniquement les recettes adaptées à la saison actuelle.',
+        icon: '🌱',
+        position: 'bottom'
+    }
+];
+
+initOnboarding('recettes', true, recettesSteps);
+{% endif %}
 </script>
 {% endblock %}

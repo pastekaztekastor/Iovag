@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Recettes possibles{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-magic"></i> Recettes possibles
+        </h1>
+        <p class="lead text-muted">Les recettes que vous pouvez réaliser avec votre stock actuel</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('recettes.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Toutes mes recettes
+        </a>
+    </div>
+</div>
+
+{% if recettes_possibles %}
+<div class="alert alert-success mb-4">
+    <i class="bi bi-check-circle"></i> Vous pouvez réaliser <strong>{{ recettes_possibles|length }} recette(s)</strong> avec votre stock actuel !
+</div>
+
+<div class="row">
+    {% for item in recettes_possibles %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm {% if item.tous_ingredients %}border-success{% endif %}">
+            {% if item.tous_ingredients %}
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-check-circle"></i> Tous les ingrédients disponibles
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">
+                    {{ item.recette.nom }}
+                </h5>
+
+                <div class="star-rating mb-2">
+                    {% for i in range(5) %}
+                        {% if i < item.recette.evaluation %}
+                            <i class="bi bi-star-fill"></i>
+                        {% else %}
+                            <i class="bi bi-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="alert alert-info mb-3">
+                    <h6 class="mb-0">
+                        <i class="bi bi-calculator"></i> Portions possibles :
+                        <strong class="fs-4">{{ item.portions_max }}</strong>
+                    </h6>
+                    <small class="text-muted">
+                        ({{ "%.1f"|format(item.ratio) }}x la recette de {{ item.recette.portions }} portions)
+                    </small>
+                </div>
+
+                <p class="card-text text-muted">
+                    <small>
+                        <i class="bi bi-people"></i> Recette de base : {{ item.recette.portions }} portions<br>
+                        {% if item.recette.temps_preparation %}
+                            <i class="bi bi-clock"></i> Préparation : {{ item.recette.temps_preparation }}<br>
+                        {% endif %}
+                        {% if item.recette.temps_cuisson %}
+                            <i class="bi bi-fire"></i> Cuisson : {{ item.recette.temps_cuisson }}
+                        {% endif %}
+                    </small>
+                </p>
+            </div>
+
+            <div class="card-footer bg-white">
+                <a href="{{ url_for('recettes.detail', id=item.recette.id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Voir
+                </a>
+                <a href="{{ url_for('recettes.edit', id=item.recette.id) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil"></i> Modifier
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i>
+    <strong>Aucune recette réalisable avec votre stock actuel</strong>
+    <p class="mb-0 mt-2">
+        Vous devez faire des courses ou
+        <a href="{{ url_for('stock.add') }}" class="alert-link">mettre à jour votre stock</a>
+        pour pouvoir cuisiner vos recettes.
+    </p>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body text-center">
+        <i class="bi bi-cart3 display-1 text-primary mb-3"></i>
+        <h5 class="card-title">Que faire maintenant ?</h5>
+        <p class="card-text">Créez un menu et générez une liste de courses pour réapprovisionner votre stock !</p>
+        <a href="{{ url_for('menus.create') }}" class="btn btn-primary me-2">
+            <i class="bi bi-calendar-week"></i> Créer un menu
+        </a>
+        <a href="{{ url_for('stock.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-box-seam"></i> Voir mon stock
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

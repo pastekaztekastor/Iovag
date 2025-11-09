@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Mon profil{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-person-circle"></i> Mon profil
+        </h1>
+        <p class="lead text-muted">Gérez vos informations personnelles</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Statistiques -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-bar-chart"></i> Statistiques</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-book"></i> Mes recettes</span>
+                        <span class="badge bg-primary rounded-pill">{{ nb_recettes }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-heart"></i> Recettes sauvegardées</span>
+                        <span class="badge bg-danger rounded-pill">{{ nb_recettes_sauvegardees }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-calendar-week"></i> Mes menus</span>
+                        <span class="badge bg-success rounded-pill">{{ nb_menus }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-box-seam"></i> Articles en stock</span>
+                        <span class="badge bg-info rounded-pill">{{ nb_stock }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle"></i> Informations</h5>
+                <p class="card-text">
+                    <small class="text-muted">
+                        <strong>Compte créé le :</strong><br>
+                        {{ current_user.created_at.strftime('%d/%m/%Y à %H:%M') }}
+                    </small>
+                </p>
+                {% if current_user.is_admin %}
+                <div class="alert alert-warning mb-0 mt-3">
+                    <i class="bi bi-shield-check"></i> Vous êtes administrateur
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaires -->
+    <div class="col-lg-8">
+        <!-- Informations du compte -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-pencil"></i> Informations du compte</h5>
+                <form method="POST" action="{{ url_for('main.profile_update') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Nom d'utilisateur</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Mettre à jour
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Changer le mot de passe -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-key"></i> Changer le mot de passe</h5>
+                <form method="POST" action="{{ url_for('main.profile_change_password') }}">
+                    <div class="mb-3">
+                        <label for="current_password" class="form-label">Mot de passe actuel</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                        <div class="form-text">Minimum 6 caractères</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirmer le nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="6">
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-key"></i> Changer le mot de passe
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Zone dangereuse -->
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Zone dangereuse</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-title">Supprimer mon compte</h6>
+                <p class="card-text text-muted">
+                    Cette action est irréversible. Toutes vos données (recettes, menus, stock) seront définitivement supprimées.
+                </p>
+
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                    <i class="bi bi-trash"></i> Supprimer mon compte
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteAccountModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.profile_delete') }}">
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <strong>Attention !</strong> Cette action est irréversible.
+                    </div>
+                    <p>Vous êtes sur le point de supprimer définitivement votre compte et toutes vos données :</p>
+                    <ul>
+                        <li>{{ nb_recettes }} recette(s)</li>
+                        <li>{{ nb_menus }} menu(s)</li>
+                        <li>{{ nb_stock }} article(s) en stock</li>
+                        <li>Toutes vos listes de courses</li>
+                        <li>Tous vos commentaires</li>
+                    </ul>
+
+                    <div class="mb-3">
+                        <label for="delete_password" class="form-label">
+                            Pour confirmer, entrez votre mot de passe :
+                        </label>
+                        <input type="password" class="form-control" id="delete_password" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Supprimer définitivement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
